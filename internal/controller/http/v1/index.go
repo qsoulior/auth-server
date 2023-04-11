@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func Index(w http.ResponseWriter, r *http.Request) {
+func index(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
 
@@ -13,4 +13,8 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	e.Encode(map[string]string{
 		"error": "Not Found",
 	})
+}
+
+func NewIndex() http.Handler {
+	return http.HandlerFunc(index)
 }
