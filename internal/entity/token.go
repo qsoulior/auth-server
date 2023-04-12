@@ -1,3 +1,8 @@
 package entity
 
-type Token string
+import "time"
+
+type Token struct {
+	Data      string
+	ExpiresAt time.Time
+}
