@@ -3,6 +3,7 @@ package entity
 import "time"
 
 type Token struct {
-	Data      string
-	ExpiresAt time.Time
+	Id        int       `json:"-"`
+	Data      string    `json:"data"`
+	ExpiresAt time.Time `json:"expires_at"`
 }
