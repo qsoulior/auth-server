@@ -27,6 +27,7 @@ func (u *User) SignUp(user entity.User) error {
 	if err != nil {
 		return err
 	}
+
 	user.Password = string(hash)
 	err = u.repo.Create(context.Background(), user)
 
