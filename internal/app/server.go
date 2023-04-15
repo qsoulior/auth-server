@@ -3,14 +3,22 @@ package app
 import (
 	"net/http"
 
+	controller "github.com/qsoulior/auth-server/internal/controller/http"
 	v1 "github.com/qsoulior/auth-server/internal/controller/http/v1"
+	"github.com/qsoulior/auth-server/internal/usecase"
 )
 
-func NewServer() *http.Server {
+const api = "/api/v1"
+
+func NewServer(uu *usecase.User, tu *usecase.Token) *http.Server {
+	uc, tc := v1.NewUser(uu), v1.NewToken(tu)
+
 	mux := http.NewServeMux()
-	mux.Handle("/", v1.NewIndex())
-	mux.Handle("/user", v1.NewUser(nil))
-	mux.Handle("/token", v1.NewToken(nil))
+	mux.Handle("/", controller.NewIndex())
+	mux.HandleFunc(api+"/user", uc.SignUp)
+	mux.HandleFunc(api+"/user/signin", uc.SignIn)
+	mux.HandleFunc(api+"/token/refresh", tc.Refresh)
+	mux.HandleFunc(api+"/token", tc.Revoke)
 
 	server := &http.Server{
 		Addr:    "localhost:3000",

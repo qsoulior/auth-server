@@ -14,9 +14,8 @@ func NewToken(u *usecase.Token) *token {
 	return &token{u}
 }
 
-func (t *token) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	// create >> signin -> access+refresh
-	// update -> access+refresh
-	// delete >> signout
+func (t *token) Refresh(w http.ResponseWriter, r *http.Request) {
+}
+
+func (t *token) Revoke(w http.ResponseWriter, r *http.Request) {
 }
