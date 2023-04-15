@@ -59,13 +59,7 @@ func (u *User) SignIn(user entity.User) (*entity.Token, error) {
 		return nil, ErrPasswordIncorrect
 	}
 
-	token, err := u.token.Refresh(existing.Id)
-	// TODO: generate access token
-	return token, err
-}
-
-func (u *User) SignOut(user entity.User) error {
-	return u.token.Revoke(user.Id)
+	return u.token.Refresh(existing.Id)
 }
 
 func NewUser(tu *Token, repo repo.User) *User {

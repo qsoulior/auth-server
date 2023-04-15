@@ -15,10 +15,9 @@ func NewServer(uu *usecase.User, tu *usecase.Token) *http.Server {
 
 	mux := http.NewServeMux()
 	mux.Handle("/", controller.NewIndex())
+	mux.Handle(api+"/token", tc)
 	mux.HandleFunc(api+"/user", uc.SignUp)
 	mux.HandleFunc(api+"/user/signin", uc.SignIn)
-	mux.HandleFunc(api+"/token/refresh", tc.Refresh)
-	mux.HandleFunc(api+"/token", tc.Revoke)
 
 	server := &http.Server{
 		Addr:    "localhost:3000",

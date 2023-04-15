@@ -18,17 +18,17 @@ func (t *TokenPostgres) Create(ctx context.Context, token entity.Token, userId i
 }
 
 func (t *TokenPostgres) GetById(ctx context.Context, id int) (*entity.Token, error) {
-	query := "SELECT * FROM token WHERE id = $1"
-	var token *entity.Token
-	err := t.Pool.QueryRow(ctx, query, id).Scan(token)
-	return token, err
+	query := "SELECT id, data, expires_at FROM token WHERE id = $1"
+	var token entity.Token
+	err := t.Pool.QueryRow(ctx, query, id).Scan(&token.Id, &token.Data, &token.ExpiresAt)
+	return &token, err
 }
 
 func (t *TokenPostgres) GetByUser(ctx context.Context, userId int) (*entity.Token, error) {
-	query := "SELECT * FROM token WHERE user_id = $1"
-	var token *entity.Token
-	err := t.Pool.QueryRow(ctx, query, userId).Scan(token)
-	return token, err
+	query := "SELECT id, data, expires_at FROM token WHERE user_id = $1 ORDER BY expires_at DESC"
+	var token entity.Token
+	err := t.Pool.QueryRow(ctx, query, userId).Scan(&token.Id, &token.Data, &token.ExpiresAt)
+	return &token, err
 }
 
 func (t *TokenPostgres) DeleteById(ctx context.Context, id int) error {
