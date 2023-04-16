@@ -1,24 +1,29 @@
 package app
 
 import (
-	"fmt"
+	"context"
 
 	"github.com/qsoulior/auth-server/internal/repo"
 	"github.com/qsoulior/auth-server/internal/usecase"
 	"github.com/qsoulior/auth-server/pkg/db"
+	"github.com/qsoulior/auth-server/pkg/logger"
 )
 
 func Run() {
-	pg, err := db.NewPostgres("postgres://postgres:test123@localhost:5432/postgres?search_path=app")
+	logger := logger.New()
+
+	postgres, err := db.NewPostgres(context.Background(), "postgres://postgres:test123@localhost:5432/postgres?search_path=app")
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(err)
 		return
 	}
-	defer pg.Close()
+	defer postgres.Close()
+	logger.Info("database connection established")
 
-	tu := usecase.NewToken(repo.NewTokenPostgres(pg))
-	uu := usecase.NewUser(tu, repo.NewUserPostgres(pg))
+	tokenUseCase := usecase.NewToken(repo.NewTokenPostgres(postgres))
+	userUseCase := usecase.NewUser(tokenUseCase, repo.NewUserPostgres(postgres))
 
-	server := NewServer(uu, tu)
-	server.ListenAndServe()
+	server := NewServer(userUseCase, tokenUseCase, logger)
+	logger.Info("server created")
+	logger.Error(server.ListenAndServe())
 }

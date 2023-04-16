@@ -3,6 +3,7 @@ package repo
 import (
 	"context"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/qsoulior/auth-server/internal/entity"
 	"github.com/qsoulior/auth-server/pkg/db"
 )
@@ -20,6 +21,9 @@ func (u *UserPostgres) GetById(ctx context.Context, id int) (*entity.User, error
 	query := `SELECT * FROM "user" WHERE id = $1`
 	var user entity.User
 	err := u.Pool.QueryRow(ctx, query, id).Scan(&user.Id, &user.Name, &user.Password)
+	if err == pgx.ErrNoRows {
+		return nil, ErrTokenNotExist
+	}
 	return &user, err
 }
 
@@ -27,6 +31,9 @@ func (u *UserPostgres) GetByName(ctx context.Context, name string) (*entity.User
 	query := `SELECT * FROM "user" WHERE name = $1`
 	var user entity.User
 	err := u.Pool.QueryRow(ctx, query, name).Scan(&user.Id, &user.Name, &user.Password)
+	if err == pgx.ErrNoRows {
+		return nil, ErrTokenNotExist
+	}
 	return &user, err
 }
 

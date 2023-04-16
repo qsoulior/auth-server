@@ -5,14 +5,12 @@ import (
 	"errors"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/qsoulior/auth-server/internal/entity"
 	"github.com/qsoulior/auth-server/internal/repo"
 	"github.com/qsoulior/auth-server/pkg/rand"
 )
 
 var (
-	ErrTokenNotExist  = errors.New("token does not exist")
 	ErrTokenIncorrect = errors.New("token is incorrect")
 	ErrTokenExpired   = errors.New("token is expired")
 )
@@ -43,9 +41,6 @@ func (t *Token) Refresh(userId int) (*entity.Token, error) {
 func (t *Token) checkToken(current string, userId int) error {
 	stored, err := t.repo.GetByUser(context.Background(), userId)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			return ErrTokenNotExist
-		}
 		return err
 	}
 

@@ -2,10 +2,14 @@ package repo
 
 import (
 	"context"
+	"errors"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/qsoulior/auth-server/internal/entity"
 	"github.com/qsoulior/auth-server/pkg/db"
 )
+
+var ErrTokenNotExist = errors.New("token does not exist")
 
 type TokenPostgres struct {
 	*db.Postgres
@@ -21,6 +25,9 @@ func (t *TokenPostgres) GetById(ctx context.Context, id int) (*entity.Token, err
 	query := "SELECT id, data, expires_at FROM token WHERE id = $1"
 	var token entity.Token
 	err := t.Pool.QueryRow(ctx, query, id).Scan(&token.Id, &token.Data, &token.ExpiresAt)
+	if err == pgx.ErrNoRows {
+		return nil, ErrTokenNotExist
+	}
 	return &token, err
 }
 
@@ -28,6 +35,9 @@ func (t *TokenPostgres) GetByUser(ctx context.Context, userId int) (*entity.Toke
 	query := "SELECT id, data, expires_at FROM token WHERE user_id = $1 ORDER BY expires_at DESC"
 	var token entity.Token
 	err := t.Pool.QueryRow(ctx, query, userId).Scan(&token.Id, &token.Data, &token.ExpiresAt)
+	if err == pgx.ErrNoRows {
+		return nil, ErrTokenNotExist
+	}
 	return &token, err
 }
 
