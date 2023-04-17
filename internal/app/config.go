@@ -6,8 +6,15 @@ import (
 	"github.com/qsoulior/auth-server/pkg/config"
 )
 
+const (
+	EnvDev  Environment = "development"
+	EnvProd Environment = "production"
+)
+
 type (
-	Config struct {
+	Environment string
+	Config      struct {
+		Env      Environment `env:"APP_ENV" default:"development"`
 		HTTP     HTTPConfig
 		Postgres PostgresConfig
 	}

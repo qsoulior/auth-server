@@ -6,14 +6,16 @@ import (
 
 	controller "github.com/qsoulior/auth-server/internal/controller/http"
 	"github.com/qsoulior/auth-server/internal/usecase"
+	"github.com/qsoulior/auth-server/pkg/log"
 )
 
 type token struct {
 	usecase *usecase.Token
+	logger  log.Logger
 }
 
-func NewToken(u *usecase.Token) *token {
-	return &token{u}
+func NewToken(usecase *usecase.Token, logger log.Logger) *token {
+	return &token{usecase, logger}
 }
 
 func (t *token) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -2,11 +2,14 @@ package repo
 
 import (
 	"context"
+	"errors"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/qsoulior/auth-server/internal/entity"
 	"github.com/qsoulior/auth-server/pkg/db"
 )
+
+var ErrUserNotExist = errors.New("user does not exist")
 
 type UserPostgres struct {
 	*db.Postgres
@@ -22,7 +25,7 @@ func (u *UserPostgres) GetByID(ctx context.Context, id int) (*entity.User, error
 	var user entity.User
 	err := u.Pool.QueryRow(ctx, query, id).Scan(&user.ID, &user.Name, &user.Password)
 	if err == pgx.ErrNoRows {
-		return nil, ErrTokenNotExist
+		return nil, ErrUserNotExist
 	}
 	return &user, err
 }
@@ -32,7 +35,7 @@ func (u *UserPostgres) GetByName(ctx context.Context, name string) (*entity.User
 	var user entity.User
 	err := u.Pool.QueryRow(ctx, query, name).Scan(&user.ID, &user.Name, &user.Password)
 	if err == pgx.ErrNoRows {
-		return nil, ErrTokenNotExist
+		return nil, ErrUserNotExist
 	}
 	return &user, err
 }

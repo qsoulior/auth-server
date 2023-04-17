@@ -1,18 +1,19 @@
 package app
 
 import (
+	"fmt"
 	"net/http"
 
 	controller "github.com/qsoulior/auth-server/internal/controller/http"
 	v1 "github.com/qsoulior/auth-server/internal/controller/http/v1"
 	"github.com/qsoulior/auth-server/internal/usecase"
-	"github.com/qsoulior/auth-server/pkg/logger"
+	"github.com/qsoulior/auth-server/pkg/log"
 )
 
 const api = "/api/v1"
 
-func NewServer(userUseCase *usecase.User, tokenUseCase *usecase.Token, logger *logger.Logger) *http.Server {
-	userController, tokenController := v1.NewUser(userUseCase), v1.NewToken(tokenUseCase)
+func NewServer(cfg *Config, logger log.Logger, user *usecase.User, token *usecase.Token) *http.Server {
+	userController, tokenController := v1.NewUser(user, logger), v1.NewToken(token, logger)
 
 	mux := http.NewServeMux()
 	mux.Handle("/", controller.NewIndex())
@@ -20,10 +21,15 @@ func NewServer(userUseCase *usecase.User, tokenUseCase *usecase.Token, logger *l
 	mux.HandleFunc(api+"/user", userController.SignUp)
 	mux.HandleFunc(api+"/user/signin", userController.SignIn)
 
+	host := ""
+	if cfg.Env == EnvDev {
+		host = "localhost"
+	}
+
 	server := &http.Server{
-		Addr:     "localhost:3000",
+		Addr:     fmt.Sprintf("%s:%s", host, cfg.HTTP.Port),
 		Handler:  mux,
-		ErrorLog: logger.ErrorLog,
+		ErrorLog: logger.(*log.ConsoleLogger).ErrorLog,
 	}
 
 	return server
