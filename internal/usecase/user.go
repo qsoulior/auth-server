@@ -59,7 +59,7 @@ func (u *User) SignIn(user entity.User) (*entity.Token, error) {
 		return nil, ErrPasswordIncorrect
 	}
 
-	return u.token.Refresh(existing.Id)
+	return u.token.Refresh(existing.ID)
 }
 
 func NewUser(tu *Token, repo repo.User) *User {

@@ -19,7 +19,7 @@ type Token struct {
 	repo repo.Token
 }
 
-func (t *Token) Refresh(userId int) (*entity.Token, error) {
+func (t *Token) Refresh(userID int) (*entity.Token, error) {
 	data, err := rand.GetString(64)
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func (t *Token) Refresh(userId int) (*entity.Token, error) {
 		ExpiresAt: time.Now().AddDate(0, 0, 30),
 	}
 
-	err = t.repo.Create(context.Background(), token, userId)
+	err = t.repo.Create(context.Background(), token, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -38,8 +38,8 @@ func (t *Token) Refresh(userId int) (*entity.Token, error) {
 	return &token, nil
 }
 
-func (t *Token) checkToken(current string, userId int) error {
-	stored, err := t.repo.GetByUser(context.Background(), userId)
+func (t *Token) checkToken(current string, userID int) error {
+	stored, err := t.repo.GetByUser(context.Background(), userID)
 	if err != nil {
 		return err
 	}
@@ -54,22 +54,22 @@ func (t *Token) checkToken(current string, userId int) error {
 	return nil
 }
 
-func (t *Token) RefreshSilent(current string, userId int) (*entity.Token, error) {
-	if err := t.checkToken(current, userId); err != nil {
+func (t *Token) RefreshSilent(current string, userID int) (*entity.Token, error) {
+	if err := t.checkToken(current, userID); err != nil {
 		return nil, err
 	}
 
-	newToken, err := t.Refresh(userId)
+	newToken, err := t.Refresh(userID)
 	// TODO: generate access token
 	return newToken, err
 }
 
-func (t *Token) Revoke(current string, userId int) error {
-	if err := t.checkToken(current, userId); err != nil {
+func (t *Token) Revoke(current string, userID int) error {
+	if err := t.checkToken(current, userID); err != nil {
 		return err
 	}
 
-	return t.repo.DeleteByUser(context.Background(), userId)
+	return t.repo.DeleteByUser(context.Background(), userID)
 }
 
 func NewToken(repo repo.Token) *Token {

@@ -17,10 +17,10 @@ func (u *UserPostgres) Create(ctx context.Context, user entity.User) error {
 	_, err := u.Pool.Exec(ctx, query, user.Name, user.Password)
 	return err
 }
-func (u *UserPostgres) GetById(ctx context.Context, id int) (*entity.User, error) {
+func (u *UserPostgres) GetByID(ctx context.Context, id int) (*entity.User, error) {
 	query := `SELECT * FROM "user" WHERE id = $1`
 	var user entity.User
-	err := u.Pool.QueryRow(ctx, query, id).Scan(&user.Id, &user.Name, &user.Password)
+	err := u.Pool.QueryRow(ctx, query, id).Scan(&user.ID, &user.Name, &user.Password)
 	if err == pgx.ErrNoRows {
 		return nil, ErrTokenNotExist
 	}
@@ -30,7 +30,7 @@ func (u *UserPostgres) GetById(ctx context.Context, id int) (*entity.User, error
 func (u *UserPostgres) GetByName(ctx context.Context, name string) (*entity.User, error) {
 	query := `SELECT * FROM "user" WHERE name = $1`
 	var user entity.User
-	err := u.Pool.QueryRow(ctx, query, name).Scan(&user.Id, &user.Name, &user.Password)
+	err := u.Pool.QueryRow(ctx, query, name).Scan(&user.ID, &user.Name, &user.Password)
 	if err == pgx.ErrNoRows {
 		return nil, ErrTokenNotExist
 	}
@@ -43,7 +43,7 @@ func (u *UserPostgres) UpdatePassword(ctx context.Context, id int, password stri
 	return err
 }
 
-func (u *UserPostgres) DeleteById(ctx context.Context, id int) error {
+func (u *UserPostgres) DeleteByID(ctx context.Context, id int) error {
 	query := `DELETE FROM "user" WHERE id = $1`
 	_, err := u.Pool.Exec(ctx, query, id)
 	return err

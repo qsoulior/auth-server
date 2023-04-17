@@ -15,41 +15,41 @@ type TokenPostgres struct {
 	*db.Postgres
 }
 
-func (t *TokenPostgres) Create(ctx context.Context, token entity.Token, userId int) error {
+func (t *TokenPostgres) Create(ctx context.Context, token entity.Token, userID int) error {
 	query := "INSERT INTO token(data, expires_at, user_id) VALUES ($1, $2, $3)"
-	_, err := t.Pool.Exec(ctx, query, token.Data, token.ExpiresAt, userId)
+	_, err := t.Pool.Exec(ctx, query, token.Data, token.ExpiresAt, userID)
 	return err
 }
 
-func (t *TokenPostgres) GetById(ctx context.Context, id int) (*entity.Token, error) {
+func (t *TokenPostgres) GetByID(ctx context.Context, id int) (*entity.Token, error) {
 	query := "SELECT id, data, expires_at FROM token WHERE id = $1"
 	var token entity.Token
-	err := t.Pool.QueryRow(ctx, query, id).Scan(&token.Id, &token.Data, &token.ExpiresAt)
+	err := t.Pool.QueryRow(ctx, query, id).Scan(&token.ID, &token.Data, &token.ExpiresAt)
 	if err == pgx.ErrNoRows {
 		return nil, ErrTokenNotExist
 	}
 	return &token, err
 }
 
-func (t *TokenPostgres) GetByUser(ctx context.Context, userId int) (*entity.Token, error) {
+func (t *TokenPostgres) GetByUser(ctx context.Context, userID int) (*entity.Token, error) {
 	query := "SELECT id, data, expires_at FROM token WHERE user_id = $1 ORDER BY expires_at DESC"
 	var token entity.Token
-	err := t.Pool.QueryRow(ctx, query, userId).Scan(&token.Id, &token.Data, &token.ExpiresAt)
+	err := t.Pool.QueryRow(ctx, query, userID).Scan(&token.ID, &token.Data, &token.ExpiresAt)
 	if err == pgx.ErrNoRows {
 		return nil, ErrTokenNotExist
 	}
 	return &token, err
 }
 
-func (t *TokenPostgres) DeleteById(ctx context.Context, id int) error {
+func (t *TokenPostgres) DeleteByID(ctx context.Context, id int) error {
 	query := "DELETE FROM token WHERE id = $1"
 	_, err := t.Pool.Exec(ctx, query, id)
 	return err
 }
 
-func (t *TokenPostgres) DeleteByUser(ctx context.Context, userId int) error {
+func (t *TokenPostgres) DeleteByUser(ctx context.Context, userID int) error {
 	query := "DELETE FROM token WHERE user_id = $1"
-	_, err := t.Pool.Exec(ctx, query, userId)
+	_, err := t.Pool.Exec(ctx, query, userID)
 	return err
 }
 

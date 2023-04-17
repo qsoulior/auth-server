@@ -20,3 +20,6 @@
 
 ### Database ###
 migrations/*
+
+### Configuration ###
+configs/*

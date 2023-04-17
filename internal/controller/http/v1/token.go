@@ -29,7 +29,7 @@ func (t *token) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var body struct {
-		UserId int    `json:"user_id"`
+		UserID int    `json:"user_id"`
 		Token  string `json:"token"`
 	}
 
@@ -41,7 +41,7 @@ func (t *token) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == http.MethodPost {
-		token, err := t.usecase.RefreshSilent(body.Token, body.UserId)
+		token, err := t.usecase.RefreshSilent(body.Token, body.UserID)
 		if err != nil {
 			controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 			return
@@ -53,7 +53,7 @@ func (t *token) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = t.usecase.Revoke(body.Token, body.UserId)
+	err = t.usecase.Revoke(body.Token, body.UserID)
 	if err != nil {
 		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return

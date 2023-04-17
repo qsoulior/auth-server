@@ -16,8 +16,8 @@ func (p *Postgres) Close() {
 	}
 }
 
-func NewPostgres(ctx context.Context, url string) (*Postgres, error) {
-	pool, err := pgxpool.New(ctx, url)
+func NewPostgres(ctx context.Context, uri string) (*Postgres, error) {
+	pool, err := pgxpool.New(ctx, uri)
 	if err != nil {
 		return nil, err
 	}

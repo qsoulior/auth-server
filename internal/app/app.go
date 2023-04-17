@@ -9,13 +9,10 @@ import (
 	"github.com/qsoulior/auth-server/pkg/logger"
 )
 
-func Run() {
-	logger := logger.New()
-
-	postgres, err := db.NewPostgres(context.Background(), "postgres://postgres:test123@localhost:5432/postgres?search_path=app")
+func Run(cfg *Config, logger *logger.Logger) error {
+	postgres, err := db.NewPostgres(context.Background(), cfg.Postgres.URI)
 	if err != nil {
-		logger.Error(err)
-		return
+		return err
 	}
 	defer postgres.Close()
 	logger.Info("database connection established")
@@ -25,5 +22,5 @@ func Run() {
 
 	server := NewServer(userUseCase, tokenUseCase, logger)
 	logger.Info("server created")
-	logger.Error(server.ListenAndServe())
+	return server.ListenAndServe()
 }
