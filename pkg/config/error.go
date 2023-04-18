@@ -18,6 +18,6 @@ func NewEmptyError(key string) *EmptyError {
 	return &EmptyError{key}
 }
 
-func (err *EmptyError) Error() string {
-	return fmt.Sprintf("%s is empty", err.key)
+func (e *EmptyError) Error() string {
+	return fmt.Sprintf("%s is empty", e.key)
 }

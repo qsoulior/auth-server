@@ -3,9 +3,24 @@ package v1
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 )
+
+type Error struct {
+	Err        error
+	Controller string
+	Address    string
+}
+
+func NewError(err error, controller string, address string) *Error {
+	return &Error{err, controller, address}
+}
+
+func (err *Error) Error() string {
+	return fmt.Sprintf("%s: %s (%s)", err.Controller, err.Err, err.Address)
+}
 
 func ErrorJSON(w http.ResponseWriter, error string, code int) error {
 	w.Header().Set("Content-Type", "application/json")

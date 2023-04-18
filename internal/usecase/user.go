@@ -3,7 +3,7 @@ package usecase
 import (
 	"context"
 	"errors"
-	"regexp"
+	"strings"
 
 	"github.com/qsoulior/auth-server/internal/entity"
 	"github.com/qsoulior/auth-server/internal/repo"
@@ -12,15 +12,58 @@ import (
 
 var (
 	ErrUserExists        = errors.New("user already exists")
-	ErrNameRegexp        = errors.New("name must be at least 4 characters...")
-	ErrPasswordRegexp    = errors.New("password must be at least 8 characters...")
+	ErrNameInvalid       = errors.New("name is invalid")
+	ErrPasswordInvalid   = errors.New("password is invalid")
 	ErrPasswordIncorrect = errors.New("password is incorrect")
 )
 
-var (
-	NameRegexp     = regexp.MustCompile("^[A-Za-z0-9]{4,30}$")
-	PasswordRegexp = regexp.MustCompile("^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[#?!@$%^&*_(),.+-]).{8,30}$")
+const (
+	lowerChars   = `abcdefghijklmnopqrstuvwxyz`
+	upperChars   = `ABCDEFGHIJKLMNOPQRSTUVWXYZ`
+	digitChars   = `0123456789`
+	specialChars = ` !"#$%&'()*+,-./:;<=>?@[\]^_{|}~`
 )
+
+func validateName(name string) error {
+	if length := len(name); length < 4 || length > 20 {
+		return ErrNameInvalid
+	}
+
+	for _, r := range name {
+		if !strings.ContainsRune(lowerChars+upperChars+digitChars+"_", r) {
+			return ErrNameInvalid
+		}
+	}
+
+	return nil
+}
+
+func validatePassword(password string) error {
+	if length := len(password); length < 8 || length > 32 {
+		return ErrPasswordInvalid
+	}
+
+	var lower, upper, digit, special bool
+
+	for _, r := range password {
+		switch {
+		case strings.ContainsRune(lowerChars, r):
+			lower = true
+		case strings.ContainsRune(upperChars, r):
+			upper = true
+		case strings.ContainsRune(digitChars, r):
+			digit = true
+		case strings.ContainsRune(specialChars, r):
+			special = true
+		}
+
+		if lower && upper && digit && special {
+			return nil
+		}
+	}
+
+	return ErrPasswordInvalid
+}
 
 type User struct {
 	token *Token
@@ -35,12 +78,12 @@ func (u *User) SignUp(user entity.User) error {
 		return err
 	}
 
-	if !NameRegexp.MatchString(user.Name) {
-		return ErrNameRegexp
+	if err := validateName(user.Name); err != nil {
+		return err
 	}
 
-	if !PasswordRegexp.MatchString(user.Password) {
-		return ErrPasswordRegexp
+	if err := validatePassword(user.Password); err != nil {
+		return err
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.MinCost)

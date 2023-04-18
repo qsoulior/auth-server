@@ -13,7 +13,7 @@ import (
 const api = "/api/v1"
 
 func NewServer(cfg *Config, logger log.Logger, user *usecase.User, token *usecase.Token) *http.Server {
-	userController, tokenController := v1.NewUser(user, logger), v1.NewToken(token, logger)
+	userController, tokenController := v1.NewUserController(user, logger), v1.NewTokenController(token, logger)
 
 	mux := http.NewServeMux()
 	mux.Handle("/", controller.NewIndex())
