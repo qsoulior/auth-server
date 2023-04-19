@@ -4,34 +4,67 @@ import (
 	"bufio"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
 type EnvGetter func(key string) (string, bool)
 
+func setValue(fieldVal reflect.Value, val string) error {
+	fieldType := fieldVal.Type()
+	switch fieldVal.Kind() {
+	case reflect.Bool:
+		boolVal, err := strconv.ParseBool(val)
+		if err != nil {
+			return err
+		}
+		fieldVal.SetBool(boolVal)
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		intVal, err := strconv.ParseInt(val, 0, fieldType.Bits())
+		if err != nil {
+			return err
+		}
+		fieldVal.SetInt(intVal)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		uintVal, err := strconv.ParseUint(val, 0, fieldType.Bits())
+		if err != nil {
+			return err
+		}
+		fieldVal.SetUint(uintVal)
+	case reflect.Float32, reflect.Float64:
+		floatVal, err := strconv.ParseFloat(val, fieldType.Bits())
+		if err != nil {
+			return err
+		}
+		fieldVal.SetFloat(floatVal)
+	case reflect.String:
+		fieldVal.SetString(val)
+	}
+	return nil
+}
+
 func read(rv reflect.Value, getter EnvGetter) error {
 	rvType := rv.Type()
 	for i := 0; i < rv.NumField(); i++ {
-		field := rv.Field(i)
-		if field.Kind() == reflect.Struct {
-			if err := read(field, getter); err != nil {
+		fieldVal := rv.Field(i)
+		if fieldVal.Kind() == reflect.Struct {
+			if err := read(fieldVal, getter); err != nil {
 				return err
 			}
 		} else {
-			fieldType := rvType.Field(i)
-			key := fieldType.Tag.Get("env")
+			field := rvType.Field(i)
 
-			if val, valExists := getter(key); valExists {
-				field.SetString(val)
-				continue
+			key := field.Tag.Get("env")
+			val, exists := getter(key)
+			if !exists {
+				if val, exists = field.Tag.Lookup("default"); !exists {
+					return NewEmptyError(key)
+				}
 			}
 
-			if def, defExists := fieldType.Tag.Lookup("default"); defExists {
-				field.SetString(def)
-				continue
+			if err := setValue(fieldVal, val); err != nil {
+				return err
 			}
-
-			return NewEmptyError(key)
 		}
 	}
 	return nil

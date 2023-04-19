@@ -17,8 +17,13 @@ func Run(cfg *Config, logger log.Logger) error {
 	defer postgres.Close()
 	logger.Info("database connection established")
 
-	tokenUseCase := usecase.NewToken(repo.NewTokenPostgres(postgres), []byte("test"))
-	userUseCase := usecase.NewUser(tokenUseCase, repo.NewUserPostgres(postgres))
+	tokenParams := usecase.TokenParams{cfg.Name, cfg.JWT.Alg, []byte("test")}
+	tokenUseCase, err := usecase.NewToken(repo.NewTokenPostgres(postgres), tokenParams)
+	if err != nil {
+		return err
+	}
+
+	userUseCase := usecase.NewUser(tokenUseCase, repo.NewUserPostgres(postgres), cfg.Bcrypt.Cost)
 
 	server := NewServer(cfg, logger, userUseCase, tokenUseCase)
 	logger.Info("server created with address " + server.Addr)

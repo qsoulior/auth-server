@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS auth.user (
     id SERIAL PRIMARY KEY,
     name VARCHAR(20) UNIQUE NOT NULL,
-    password VARCHAR(60) NOT NULL
+    password CHAR(60) NOT NULL
 );

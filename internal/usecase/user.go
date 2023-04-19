@@ -66,8 +66,13 @@ func validatePassword(password string) error {
 }
 
 type User struct {
-	token *Token
-	repo  repo.User
+	token    *Token
+	repo     repo.User
+	hashCost int
+}
+
+func NewUser(tu *Token, repo repo.User, hashCost int) *User {
+	return &User{tu, repo, hashCost}
 }
 
 func (u *User) SignUp(user entity.User) error {
@@ -86,7 +91,7 @@ func (u *User) SignUp(user entity.User) error {
 		return err
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.MinCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), u.hashCost)
 	if err != nil {
 		return err
 	}
@@ -109,8 +114,4 @@ func (u *User) SignIn(user entity.User) (*entity.AccessToken, *entity.RefreshTok
 	}
 
 	return u.token.Refresh(existing.ID)
-}
-
-func NewUser(tu *Token, repo repo.User) *User {
-	return &User{tu, repo}
 }

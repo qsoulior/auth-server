@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -14,15 +15,27 @@ import (
 var (
 	ErrTokenIncorrect = errors.New("token is incorrect")
 	ErrTokenExpired   = errors.New("token is expired")
+	ErrAlgInvalid     = errors.New("algorithm is invalid")
 )
 
-type Token struct {
-	repo repo.Token
-	key  any
+type TokenParams struct {
+	Issuer    string
+	Algorithm string
+	Key       any
 }
 
-func NewToken(repo repo.Token, key any) *Token {
-	return &Token{repo, key}
+type Token struct {
+	repo   repo.Token
+	params TokenParams
+}
+
+func NewToken(repo repo.Token, params TokenParams) (*Token, error) {
+	for _, algorithm := range jwt.GetAlgorithms() {
+		if params.Algorithm == algorithm {
+			return &Token{repo, params}, nil
+		}
+	}
+	return nil, ErrAlgInvalid
 }
 
 func (t *Token) Refresh(userID int) (*entity.AccessToken, *entity.RefreshToken, error) {
@@ -41,11 +54,15 @@ func (t *Token) Refresh(userID int) (*entity.AccessToken, *entity.RefreshToken, 
 		return nil, nil, err
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"exp": time.Now().Add(15 * time.Minute),
-	})
+	method := jwt.GetSigningMethod(t.params.Algorithm)
+	claims := &jwt.RegisteredClaims{
+		Issuer:    t.params.Issuer,
+		Subject:   strconv.Itoa(userID),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+	}
+	token := jwt.NewWithClaims(method, claims)
 
-	tokenStr, err := token.SignedString(t.key)
+	tokenStr, err := token.SignedString(t.params.Key)
 	if err != nil {
 		return nil, nil, err
 	}
