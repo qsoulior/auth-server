@@ -18,8 +18,5 @@
 ### VisualStudioCode ###
 .vscode/*
 
-### Database ###
-migrations/*
-
 ### Configuration ###
 configs/*

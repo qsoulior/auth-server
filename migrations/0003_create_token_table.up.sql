@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS app.token (
+    id SERIAL PRIMARY KEY,
+    data VARCHAR(128) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    user_id INTEGER REFERENCES app.user(id) ON DELETE CASCADE NOT NULL
+);

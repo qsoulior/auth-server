@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS app.user (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(64) UNIQUE NOT NULL,
+    password VARCHAR(256) NOT NULL
+);
