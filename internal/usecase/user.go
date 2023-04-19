@@ -39,7 +39,7 @@ func validateName(name string) error {
 }
 
 func validatePassword(password string) error {
-	if length := len(password); length < 8 || length > 32 {
+	if length := len(password); length < 8 || length > 72 {
 		return ErrPasswordInvalid
 	}
 

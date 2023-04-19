@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS app.user;
+DROP TABLE IF EXISTS auth.user;

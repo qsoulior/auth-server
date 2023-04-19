@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS app.token;
+DROP TABLE IF EXISTS auth.token;

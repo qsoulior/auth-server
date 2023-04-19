@@ -16,7 +16,7 @@
 # vendor/
 
 ### VisualStudioCode ###
-.vscode/*
+.vscode/
 
 ### Configuration ###
 configs/*
