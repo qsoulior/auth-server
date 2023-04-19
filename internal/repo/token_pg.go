@@ -15,15 +15,15 @@ type TokenPostgres struct {
 	*db.Postgres
 }
 
-func (t *TokenPostgres) Create(ctx context.Context, token entity.Token, userID int) error {
+func (t *TokenPostgres) Create(ctx context.Context, token entity.RefreshToken, userID int) error {
 	query := "INSERT INTO token(data, expires_at, user_id) VALUES ($1, $2, $3)"
 	_, err := t.Pool.Exec(ctx, query, token.Data, token.ExpiresAt, userID)
 	return err
 }
 
-func (t *TokenPostgres) GetByID(ctx context.Context, id int) (*entity.Token, error) {
+func (t *TokenPostgres) GetByID(ctx context.Context, id int) (*entity.RefreshToken, error) {
 	query := "SELECT id, data, expires_at FROM token WHERE id = $1"
-	var token entity.Token
+	var token entity.RefreshToken
 	err := t.Pool.QueryRow(ctx, query, id).Scan(&token.ID, &token.Data, &token.ExpiresAt)
 	if err == pgx.ErrNoRows {
 		return nil, ErrTokenNotExist
@@ -31,9 +31,9 @@ func (t *TokenPostgres) GetByID(ctx context.Context, id int) (*entity.Token, err
 	return &token, err
 }
 
-func (t *TokenPostgres) GetByUser(ctx context.Context, userID int) (*entity.Token, error) {
+func (t *TokenPostgres) GetByUser(ctx context.Context, userID int) (*entity.RefreshToken, error) {
 	query := "SELECT id, data, expires_at FROM token WHERE user_id = $1 ORDER BY expires_at DESC"
-	var token entity.Token
+	var token entity.RefreshToken
 	err := t.Pool.QueryRow(ctx, query, userID).Scan(&token.ID, &token.Data, &token.ExpiresAt)
 	if err == pgx.ErrNoRows {
 		return nil, ErrTokenNotExist

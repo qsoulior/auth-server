@@ -15,9 +15,9 @@ type User interface {
 }
 
 type Token interface {
-	Create(ctx context.Context, token entity.Token, userID int) error
-	GetByID(ctx context.Context, id int) (*entity.Token, error)
-	GetByUser(ctx context.Context, userID int) (*entity.Token, error)
+	Create(ctx context.Context, token entity.RefreshToken, userID int) error
+	GetByID(ctx context.Context, id int) (*entity.RefreshToken, error)
+	GetByUser(ctx context.Context, userID int) (*entity.RefreshToken, error)
 	DeleteByID(ctx context.Context, id int) error
 	DeleteByUser(ctx context.Context, userID int) error
 }

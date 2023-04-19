@@ -85,7 +85,7 @@ func (u *user) SignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := u.usecase.SignIn(user)
+	accessToken, refreshToken, err := u.usecase.SignIn(user)
 	if err != nil {
 		err := controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 		u.logger.Error(controller.NewError(err, controllerName, address))
@@ -94,5 +94,8 @@ func (u *user) SignIn(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(200)
 	e := json.NewEncoder(w)
-	e.Encode(token)
+	e.Encode(map[string]any{
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
+	})
 }

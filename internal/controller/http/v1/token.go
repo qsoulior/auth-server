@@ -49,7 +49,7 @@ func (t *token) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == http.MethodPost {
-		token, err := t.usecase.RefreshSilent(body.Token, body.UserID)
+		accessToken, refreshToken, err := t.usecase.RefreshSilent(body.Token, body.UserID)
 		if err != nil {
 			err := controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 			t.logger.Error(controller.NewError(err, controllerName, address))
@@ -58,7 +58,10 @@ func (t *token) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		w.WriteHeader(200)
 		e := json.NewEncoder(w)
-		e.Encode(token)
+		e.Encode(map[string]any{
+			"access_token":  accessToken,
+			"refresh_token": refreshToken,
+		})
 		return
 	}
 

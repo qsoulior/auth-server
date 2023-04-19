@@ -97,15 +97,15 @@ func (u *User) SignUp(user entity.User) error {
 	return err
 }
 
-func (u *User) SignIn(user entity.User) (*entity.Token, error) {
+func (u *User) SignIn(user entity.User) (*entity.AccessToken, *entity.RefreshToken, error) {
 	existing, err := u.repo.GetByName(context.Background(), user.Name)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(existing.Password), []byte(user.Password))
 	if err != nil {
-		return nil, ErrPasswordIncorrect
+		return nil, nil, ErrPasswordIncorrect
 	}
 
 	return u.token.Refresh(existing.ID)

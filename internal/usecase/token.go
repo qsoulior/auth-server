@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/qsoulior/auth-server/internal/entity"
 	"github.com/qsoulior/auth-server/internal/repo"
 	"github.com/qsoulior/auth-server/pkg/rand"
@@ -17,25 +18,41 @@ var (
 
 type Token struct {
 	repo repo.Token
+	key  any
 }
 
-func (t *Token) Refresh(userID int) (*entity.Token, error) {
+func NewToken(repo repo.Token, key any) *Token {
+	return &Token{repo, key}
+}
+
+func (t *Token) Refresh(userID int) (*entity.AccessToken, *entity.RefreshToken, error) {
 	data, err := rand.GetString(64)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	token := entity.Token{
+	refreshToken := entity.RefreshToken{
 		Data:      data,
 		ExpiresAt: time.Now().AddDate(0, 0, 30),
 	}
 
-	err = t.repo.Create(context.Background(), token, userID)
+	err = t.repo.Create(context.Background(), refreshToken, userID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return &token, nil
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"exp": time.Now().Add(15 * time.Minute),
+	})
+
+	tokenStr, err := token.SignedString(t.key)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	accessToken := entity.AccessToken(tokenStr)
+
+	return &accessToken, &refreshToken, nil
 }
 
 func (t *Token) checkToken(current string, userID int) error {
@@ -54,14 +71,12 @@ func (t *Token) checkToken(current string, userID int) error {
 	return nil
 }
 
-func (t *Token) RefreshSilent(current string, userID int) (*entity.Token, error) {
+func (t *Token) RefreshSilent(current string, userID int) (*entity.AccessToken, *entity.RefreshToken, error) {
 	if err := t.checkToken(current, userID); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	newToken, err := t.Refresh(userID)
-	// TODO: generate access token
-	return newToken, err
+	return t.Refresh(userID)
 }
 
 func (t *Token) Revoke(current string, userID int) error {
@@ -70,8 +85,4 @@ func (t *Token) Revoke(current string, userID int) error {
 	}
 
 	return t.repo.DeleteByUser(context.Background(), userID)
-}
-
-func NewToken(repo repo.Token) *Token {
-	return &Token{repo}
 }
