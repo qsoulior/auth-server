@@ -9,7 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/qsoulior/auth-server/internal/entity"
 	"github.com/qsoulior/auth-server/internal/repo"
-	"github.com/qsoulior/auth-server/pkg/rand"
+	"github.com/qsoulior/auth-server/pkg/uuid"
 )
 
 var (
@@ -39,7 +39,7 @@ func NewToken(repo repo.Token, params TokenParams) (*Token, error) {
 }
 
 func (t *Token) Refresh(userID int) (*entity.AccessToken, *entity.RefreshToken, error) {
-	data, err := rand.GetString(64)
+	data, err := uuid.New()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -72,34 +72,36 @@ func (t *Token) Refresh(userID int) (*entity.AccessToken, *entity.RefreshToken, 
 	return &accessToken, &refreshToken, nil
 }
 
-func (t *Token) checkToken(current string, userID int) error {
-	stored, err := t.repo.GetByUser(context.Background(), userID)
+func (t *Token) getToken(data uuid.UUID) (*entity.RefreshToken, error) {
+	token, err := t.repo.GetByData(context.Background(), data)
+	if err != nil {
+		return nil, err
+	}
+
+	if token.ExpiresAt.Before(time.Now()) {
+		return nil, ErrTokenExpired
+	}
+	return token, nil
+}
+
+func (t *Token) RefreshSilent(data uuid.UUID) (*entity.AccessToken, *entity.RefreshToken, error) {
+	token, err := t.getToken(data)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if err := t.repo.DeleteByID(context.Background(), token.ID); err != nil {
+		return nil, nil, err
+	}
+
+	return t.Refresh(token.UserID)
+}
+
+func (t *Token) Revoke(data uuid.UUID) error {
+	token, err := t.getToken(data)
 	if err != nil {
 		return err
 	}
 
-	if current != stored.Data {
-		return ErrTokenIncorrect
-	}
-
-	if stored.ExpiresAt.Before(time.Now()) {
-		return ErrTokenExpired
-	}
-	return nil
-}
-
-func (t *Token) RefreshSilent(current string, userID int) (*entity.AccessToken, *entity.RefreshToken, error) {
-	if err := t.checkToken(current, userID); err != nil {
-		return nil, nil, err
-	}
-
-	return t.Refresh(userID)
-}
-
-func (t *Token) Revoke(current string, userID int) error {
-	if err := t.checkToken(current, userID); err != nil {
-		return err
-	}
-
-	return t.repo.DeleteByUser(context.Background(), userID)
+	return t.repo.DeleteByID(context.Background(), token.ID)
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/qsoulior/auth-server/internal/entity"
 	"github.com/qsoulior/auth-server/pkg/db"
+	"github.com/qsoulior/auth-server/pkg/uuid"
 )
 
 var ErrTokenNotExist = errors.New("token does not exist")
@@ -22,19 +23,19 @@ func (t *TokenPostgres) Create(ctx context.Context, token entity.RefreshToken, u
 }
 
 func (t *TokenPostgres) GetByID(ctx context.Context, id int) (*entity.RefreshToken, error) {
-	query := "SELECT id, data, expires_at FROM token WHERE id = $1"
+	query := "SELECT * FROM token WHERE id = $1"
 	var token entity.RefreshToken
-	err := t.Pool.QueryRow(ctx, query, id).Scan(&token.ID, &token.Data, &token.ExpiresAt)
+	err := t.Pool.QueryRow(ctx, query, id).Scan(&token.ID, &token.Data, &token.ExpiresAt, &token.UserID)
 	if err == pgx.ErrNoRows {
 		return nil, ErrTokenNotExist
 	}
 	return &token, err
 }
 
-func (t *TokenPostgres) GetByUser(ctx context.Context, userID int) (*entity.RefreshToken, error) {
-	query := "SELECT id, data, expires_at FROM token WHERE user_id = $1 ORDER BY expires_at DESC"
+func (t *TokenPostgres) GetByData(ctx context.Context, data uuid.UUID) (*entity.RefreshToken, error) {
+	query := "SELECT * FROM token WHERE data = $1"
 	var token entity.RefreshToken
-	err := t.Pool.QueryRow(ctx, query, userID).Scan(&token.ID, &token.Data, &token.ExpiresAt)
+	err := t.Pool.QueryRow(ctx, query, data).Scan(&token.ID, &token.Data, &token.ExpiresAt, &token.UserID)
 	if err == pgx.ErrNoRows {
 		return nil, ErrTokenNotExist
 	}

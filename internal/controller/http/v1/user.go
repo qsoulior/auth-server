@@ -92,10 +92,5 @@ func (u *user) SignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(200)
-	e := json.NewEncoder(w)
-	e.Encode(map[string]any{
-		"access_token":  accessToken,
-		"refresh_token": refreshToken,
-	})
+	writeToken(w, accessToken, refreshToken)
 }
