@@ -25,14 +25,14 @@ func (u *user) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodPost {
 		err := controller.MethodNotAllowed(w, r, []string{http.MethodPost})
-		u.logger.Error(controller.NewError(err, controllerName, address))
+		u.logger.Error(controller.Error{err, controllerName, address})
 		return
 	}
 
 	w.Header().Set("Content-Type", controller.ContentType)
 	if r.Header.Get("Content-Type") != controller.ContentType {
 		err := controller.UnsupportedMediaType(w, r, controller.ContentType)
-		u.logger.Error(controller.NewError(err, controllerName, address))
+		u.logger.Error(controller.Error{err, controllerName, address})
 		return
 	}
 
@@ -41,14 +41,14 @@ func (u *user) SignUp(w http.ResponseWriter, r *http.Request) {
 	err := d.Decode(&user)
 	if err != nil {
 		err := controller.ErrorJSON(w, "decoding error", http.StatusBadRequest)
-		u.logger.Error(controller.NewError(err, controllerName, address))
+		u.logger.Error(controller.Error{err, controllerName, address})
 		return
 	}
 
 	err = u.usecase.SignUp(user)
 	if err != nil {
 		err := controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
-		u.logger.Error(controller.NewError(err, controllerName, address))
+		u.logger.Error(controller.Error{err, controllerName, address})
 		return
 	}
 
@@ -65,14 +65,14 @@ func (u *user) SignIn(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodPost {
 		err := controller.MethodNotAllowed(w, r, []string{http.MethodPost})
-		u.logger.Error(controller.NewError(err, controllerName, address))
+		u.logger.Error(controller.Error{err, controllerName, address})
 		return
 	}
 
 	w.Header().Set("Content-Type", controller.ContentType)
 	if r.Header.Get("Content-Type") != controller.ContentType {
 		err := controller.UnsupportedMediaType(w, r, controller.ContentType)
-		u.logger.Error(controller.NewError(err, controllerName, address))
+		u.logger.Error(controller.Error{err, controllerName, address})
 		return
 	}
 
@@ -81,14 +81,14 @@ func (u *user) SignIn(w http.ResponseWriter, r *http.Request) {
 	err := d.Decode(&user)
 	if err != nil {
 		err := controller.ErrorJSON(w, "decoding error", http.StatusBadRequest)
-		u.logger.Error(controller.NewError(err, controllerName, address))
+		u.logger.Error(controller.Error{err, controllerName, address})
 		return
 	}
 
 	accessToken, refreshToken, err := u.usecase.SignIn(user)
 	if err != nil {
 		err := controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
-		u.logger.Error(controller.NewError(err, controllerName, address))
+		u.logger.Error(controller.Error{err, controllerName, address})
 		return
 	}
 

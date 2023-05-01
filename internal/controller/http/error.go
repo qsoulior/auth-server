@@ -14,10 +14,6 @@ type Error struct {
 	Address    string
 }
 
-func NewError(err error, controller string, address string) *Error {
-	return &Error{err, controller, address}
-}
-
 func (err *Error) Error() string {
 	return fmt.Sprintf("%s: %s (%s)", err.Controller, err.Err, err.Address)
 }

@@ -75,7 +75,7 @@ func (t *Token) Refresh(userID int) (*entity.AccessToken, *entity.RefreshToken, 
 func (t *Token) getToken(data uuid.UUID) (*entity.RefreshToken, error) {
 	token, err := t.repo.GetByData(context.Background(), data)
 	if err != nil {
-		return nil, err
+		return nil, ErrTokenIncorrect
 	}
 
 	if token.ExpiresAt.Before(time.Now()) {

@@ -2,6 +2,7 @@ package v1
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
@@ -26,37 +27,21 @@ func (t *token) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	address := r.RemoteAddr
 	if r.Method != http.MethodPost && r.Method != http.MethodDelete {
 		err := controller.MethodNotAllowed(w, r, []string{http.MethodPost, http.MethodDelete})
-		t.logger.Error(controller.NewError(err, controllerName, address))
+		t.logger.Error(controller.Error{err, controllerName, address})
 		return
 	}
 
 	w.Header().Set("Content-Type", controller.ContentType)
 	if r.Header.Get("Content-Type") != controller.ContentType {
 		err := controller.UnsupportedMediaType(w, r, controller.ContentType)
-		t.logger.Error(controller.NewError(err, controllerName, address))
+		t.logger.Error(controller.Error{err, controllerName, address})
 		return
 	}
 
-	var data string
-	if cookie, err := r.Cookie("refresh_token"); err != http.ErrNoCookie {
-		data = cookie.Value
-	} else {
-		var body struct {
-			Value string `json:"refresh_token"`
-		}
-
-		d := json.NewDecoder(r.Body)
-		err := d.Decode(&body)
-		if err != nil {
-			err := controller.ErrorJSON(w, "decoding error", http.StatusBadRequest)
-			t.logger.Error(controller.NewError(err, controllerName, address))
-			return
-		}
-		data = body.Value
-	}
-
-	token, err := uuid.FromString(data)
+	token, err := readToken(r)
 	if err != nil {
+		err := controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
+		t.logger.Error(controller.Error{err, controllerName, address})
 		return
 	}
 
@@ -64,7 +49,7 @@ func (t *token) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		accessToken, refreshToken, err := t.usecase.RefreshSilent(token)
 		if err != nil {
 			err := controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
-			t.logger.Error(controller.NewError(err, controllerName, address))
+			t.logger.Error(controller.Error{err, controllerName, address})
 			return
 		}
 
@@ -75,17 +60,45 @@ func (t *token) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err = t.usecase.Revoke(token)
 	if err != nil {
 		err := controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
-		t.logger.Error(controller.NewError(err, controllerName, address))
+		t.logger.Error(controller.Error{err, controllerName, address})
 		return
 	}
 	deleteToken(w)
 }
 
-func writeToken(w http.ResponseWriter, accessToken *entity.AccessToken, refreshToken *entity.RefreshToken) {
+func readToken(r *http.Request) (uuid.UUID, error) {
+	var (
+		data  string
+		token uuid.UUID
+	)
+
+	if cookie, err := r.Cookie("refresh_token"); err != http.ErrNoCookie {
+		data = cookie.Value
+	} else {
+		var body struct {
+			Value string `json:"refresh_token"`
+		}
+
+		d := json.NewDecoder(r.Body)
+		err := d.Decode(&body)
+		if err != nil {
+			return token, errors.New("decoding error")
+		}
+		data = body.Value
+	}
+
+	if data == "" {
+		return token, errors.New("token is empty")
+	}
+
+	return uuid.FromString(data)
+}
+
+func writeToken(w http.ResponseWriter, access *entity.AccessToken, refresh *entity.RefreshToken) {
 	cookie := &http.Cookie{
 		Name:     "refresh_token",
-		Value:    refreshToken.Data.String(),
-		Expires:  refreshToken.ExpiresAt,
+		Value:    refresh.Data.String(),
+		Expires:  refresh.ExpiresAt,
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
@@ -96,8 +109,8 @@ func writeToken(w http.ResponseWriter, accessToken *entity.AccessToken, refreshT
 
 	e := json.NewEncoder(w)
 	e.Encode(map[string]any{
-		"access_token":  accessToken,
-		"refresh_token": refreshToken,
+		"access_token":  access,
+		"refresh_token": refresh,
 	})
 }
 
