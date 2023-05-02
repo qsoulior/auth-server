@@ -16,6 +16,10 @@ type TokenPostgres struct {
 	*db.Postgres
 }
 
+func NewTokenPostgres(db *db.Postgres) Token {
+	return &TokenPostgres{db}
+}
+
 func (t *TokenPostgres) Create(ctx context.Context, token entity.RefreshToken, userID int) error {
 	query := "INSERT INTO token(data, expires_at, user_id) VALUES ($1, $2, $3)"
 	_, err := t.Pool.Exec(ctx, query, token.Data, token.ExpiresAt, userID)
@@ -52,8 +56,4 @@ func (t *TokenPostgres) DeleteByUser(ctx context.Context, userID int) error {
 	query := "DELETE FROM token WHERE user_id = $1"
 	_, err := t.Pool.Exec(ctx, query, userID)
 	return err
-}
-
-func NewTokenPostgres(db *db.Postgres) Token {
-	return &TokenPostgres{db}
 }

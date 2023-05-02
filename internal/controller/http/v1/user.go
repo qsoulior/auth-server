@@ -19,78 +19,82 @@ func NewUserController(usecase usecase.User, logger log.Logger) *user {
 	return &user{usecase, logger}
 }
 
-func (u *user) SignUp(w http.ResponseWriter, r *http.Request) {
+func (u *user) SignUp() http.Handler {
 	controllerName := "sign up"
-	address := r.RemoteAddr
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		address := r.RemoteAddr
 
-	if r.Method != http.MethodPost {
-		err := controller.MethodNotAllowed(w, r, []string{http.MethodPost})
-		u.logger.Error(controller.Error{err, controllerName, address})
-		return
-	}
+		if r.Method != http.MethodPost {
+			err := controller.MethodNotAllowed(w, r, []string{http.MethodPost})
+			u.logger.Error(controller.Error{err, controllerName, address})
+			return
+		}
 
-	w.Header().Set("Content-Type", controller.ContentType)
-	if r.Header.Get("Content-Type") != controller.ContentType {
-		err := controller.UnsupportedMediaType(w, r, controller.ContentType)
-		u.logger.Error(controller.Error{err, controllerName, address})
-		return
-	}
+		w.Header().Set("Content-Type", controller.ContentType)
+		if r.Header.Get("Content-Type") != controller.ContentType {
+			err := controller.UnsupportedMediaType(w, r, controller.ContentType)
+			u.logger.Error(controller.Error{err, controllerName, address})
+			return
+		}
 
-	var user entity.User
-	d := json.NewDecoder(r.Body)
-	err := d.Decode(&user)
-	if err != nil {
-		err := controller.ErrorJSON(w, "decoding error", http.StatusBadRequest)
-		u.logger.Error(controller.Error{err, controllerName, address})
-		return
-	}
+		var user entity.User
+		d := json.NewDecoder(r.Body)
+		err := d.Decode(&user)
+		if err != nil {
+			err := controller.ErrorJSON(w, "decoding error", http.StatusBadRequest)
+			u.logger.Error(controller.Error{err, controllerName, address})
+			return
+		}
 
-	err = u.usecase.SignUp(user)
-	if err != nil {
-		err := controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
-		u.logger.Error(controller.Error{err, controllerName, address})
-		return
-	}
+		err = u.usecase.SignUp(user)
+		if err != nil {
+			err := controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
+			u.logger.Error(controller.Error{err, controllerName, address})
+			return
+		}
 
-	w.WriteHeader(200)
-	e := json.NewEncoder(w)
-	e.Encode(map[string]string{
-		"message": "success",
+		w.WriteHeader(200)
+		e := json.NewEncoder(w)
+		e.Encode(map[string]string{
+			"message": "success",
+		})
 	})
 }
 
-func (u *user) SignIn(w http.ResponseWriter, r *http.Request) {
+func (u *user) SignIn() http.Handler {
 	controllerName := "sign in"
-	address := r.RemoteAddr
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		address := r.RemoteAddr
 
-	if r.Method != http.MethodPost {
-		err := controller.MethodNotAllowed(w, r, []string{http.MethodPost})
-		u.logger.Error(controller.Error{err, controllerName, address})
-		return
-	}
+		if r.Method != http.MethodPost {
+			err := controller.MethodNotAllowed(w, r, []string{http.MethodPost})
+			u.logger.Error(controller.Error{err, controllerName, address})
+			return
+		}
 
-	w.Header().Set("Content-Type", controller.ContentType)
-	if r.Header.Get("Content-Type") != controller.ContentType {
-		err := controller.UnsupportedMediaType(w, r, controller.ContentType)
-		u.logger.Error(controller.Error{err, controllerName, address})
-		return
-	}
+		w.Header().Set("Content-Type", controller.ContentType)
+		if r.Header.Get("Content-Type") != controller.ContentType {
+			err := controller.UnsupportedMediaType(w, r, controller.ContentType)
+			u.logger.Error(controller.Error{err, controllerName, address})
+			return
+		}
 
-	var user entity.User
-	d := json.NewDecoder(r.Body)
-	err := d.Decode(&user)
-	if err != nil {
-		err := controller.ErrorJSON(w, "decoding error", http.StatusBadRequest)
-		u.logger.Error(controller.Error{err, controllerName, address})
-		return
-	}
+		var user entity.User
+		d := json.NewDecoder(r.Body)
+		err := d.Decode(&user)
+		if err != nil {
+			err := controller.ErrorJSON(w, "decoding error", http.StatusBadRequest)
+			u.logger.Error(controller.Error{err, controllerName, address})
+			return
+		}
 
-	accessToken, refreshToken, err := u.usecase.SignIn(user)
-	if err != nil {
-		err := controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
-		u.logger.Error(controller.Error{err, controllerName, address})
-		return
-	}
+		accessToken, refreshToken, err := u.usecase.SignIn(user)
+		if err != nil {
+			err := controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
+			u.logger.Error(controller.Error{err, controllerName, address})
+			return
+		}
 
-	writeToken(w, accessToken, refreshToken)
+		writeToken(w, accessToken, refreshToken)
+	})
 }

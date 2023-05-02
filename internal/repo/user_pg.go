@@ -15,11 +15,16 @@ type UserPostgres struct {
 	*db.Postgres
 }
 
+func NewUserPostgres(db *db.Postgres) User {
+	return &UserPostgres{db}
+}
+
 func (u *UserPostgres) Create(ctx context.Context, user entity.User) error {
 	query := `INSERT INTO "user"(name, password) VALUES ($1, $2)`
 	_, err := u.Pool.Exec(ctx, query, user.Name, user.Password)
 	return err
 }
+
 func (u *UserPostgres) GetByID(ctx context.Context, id int) (*entity.User, error) {
 	query := `SELECT * FROM "user" WHERE id = $1`
 	var user entity.User
@@ -50,8 +55,4 @@ func (u *UserPostgres) DeleteByID(ctx context.Context, id int) error {
 	query := `DELETE FROM "user" WHERE id = $1`
 	_, err := u.Pool.Exec(ctx, query, id)
 	return err
-}
-
-func NewUserPostgres(db *db.Postgres) User {
-	return &UserPostgres{db}
 }

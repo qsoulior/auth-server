@@ -16,10 +16,10 @@ func NewServer(cfg *Config, logger log.Logger, user usecase.User, token usecase.
 	userController, tokenController := v1.NewUserController(user, logger), v1.NewTokenController(token, logger)
 
 	mux := http.NewServeMux()
-	mux.Handle("/", controller.NewIndex())
+	mux.Handle("/", controller.Index())
 	mux.Handle(api+"/token", tokenController)
-	mux.HandleFunc(api+"/user", userController.SignUp)
-	mux.HandleFunc(api+"/user/signin", userController.SignIn)
+	mux.Handle(api+"/user", userController.SignUp())
+	mux.Handle(api+"/user/signin", userController.SignIn())
 
 	host := ""
 	if cfg.Env == EnvDev {
