@@ -24,21 +24,21 @@ type TokenParams struct {
 	Key       any
 }
 
-type Token struct {
+type token struct {
 	repo   repo.Token
 	params TokenParams
 }
 
-func NewToken(repo repo.Token, params TokenParams) (*Token, error) {
+func NewToken(repo repo.Token, params TokenParams) (*token, error) {
 	for _, algorithm := range jwt.GetAlgorithms() {
 		if params.Algorithm == algorithm {
-			return &Token{repo, params}, nil
+			return &token{repo, params}, nil
 		}
 	}
 	return nil, ErrAlgInvalid
 }
 
-func (t *Token) Refresh(userID int) (*entity.AccessToken, *entity.RefreshToken, error) {
+func (t *token) Refresh(userID int) (*entity.AccessToken, *entity.RefreshToken, error) {
 	data, err := uuid.New()
 	if err != nil {
 		return nil, nil, err
@@ -72,7 +72,7 @@ func (t *Token) Refresh(userID int) (*entity.AccessToken, *entity.RefreshToken, 
 	return &accessToken, &refreshToken, nil
 }
 
-func (t *Token) getToken(data uuid.UUID) (*entity.RefreshToken, error) {
+func (t *token) getToken(data uuid.UUID) (*entity.RefreshToken, error) {
 	token, err := t.repo.GetByData(context.Background(), data)
 	if err != nil {
 		return nil, ErrTokenIncorrect
@@ -84,7 +84,7 @@ func (t *Token) getToken(data uuid.UUID) (*entity.RefreshToken, error) {
 	return token, nil
 }
 
-func (t *Token) RefreshSilent(data uuid.UUID) (*entity.AccessToken, *entity.RefreshToken, error) {
+func (t *token) RefreshSilent(data uuid.UUID) (*entity.AccessToken, *entity.RefreshToken, error) {
 	token, err := t.getToken(data)
 	if err != nil {
 		return nil, nil, err
@@ -97,7 +97,7 @@ func (t *Token) RefreshSilent(data uuid.UUID) (*entity.AccessToken, *entity.Refr
 	return t.Refresh(token.UserID)
 }
 
-func (t *Token) Revoke(data uuid.UUID) error {
+func (t *token) Revoke(data uuid.UUID) error {
 	token, err := t.getToken(data)
 	if err != nil {
 		return err

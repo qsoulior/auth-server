@@ -3,8 +3,10 @@ package usecase
 import (
 	"context"
 	"errors"
+	"strconv"
 	"strings"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/qsoulior/auth-server/internal/entity"
 	"github.com/qsoulior/auth-server/internal/repo"
 	"golang.org/x/crypto/bcrypt"
@@ -65,17 +67,30 @@ func validatePassword(password string) error {
 	return ErrPasswordInvalid
 }
 
-type User struct {
-	token    *Token
-	repo     repo.User
-	hashCost int
+type UserParams struct {
+	Issuer   string
+	HashCost int
 }
 
-func NewUser(tu *Token, repo repo.User, hashCost int) *User {
-	return &User{tu, repo, hashCost}
+type user struct {
+	token  Token
+	repo   repo.User
+	params UserParams
 }
 
-func (u *User) SignUp(user entity.User) error {
+func NewUser(tu Token, repo repo.User, params UserParams) *user {
+	return &user{tu, repo, params}
+}
+
+func (u *user) hashPassword(password string) ([]byte, error) {
+	if err := validatePassword(password); err != nil {
+		return nil, err
+	}
+
+	return bcrypt.GenerateFromPassword([]byte(password), u.params.HashCost)
+}
+
+func (u *user) SignUp(user entity.User) error {
 	_, err := u.repo.GetByName(context.Background(), user.Name)
 	if err == nil {
 		return ErrUserExists
@@ -87,31 +102,55 @@ func (u *User) SignUp(user entity.User) error {
 		return err
 	}
 
-	if err := validatePassword(user.Password); err != nil {
-		return err
-	}
-
-	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), u.hashCost)
+	hash, err := u.hashPassword(user.Password)
 	if err != nil {
 		return err
 	}
 
 	user.Password = string(hash)
-	err = u.repo.Create(context.Background(), user)
-
-	return err
+	return u.repo.Create(context.Background(), user)
 }
 
-func (u *User) SignIn(user entity.User) (*entity.AccessToken, *entity.RefreshToken, error) {
-	existing, err := u.repo.GetByName(context.Background(), user.Name)
+func (u *user) SignIn(user entity.User) (*entity.AccessToken, *entity.RefreshToken, error) {
+	ex, err := u.repo.GetByName(context.Background(), user.Name)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(existing.Password), []byte(user.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(ex.Password), []byte(user.Password))
 	if err != nil {
 		return nil, nil, ErrPasswordIncorrect
 	}
 
-	return u.token.Refresh(existing.ID)
+	return u.token.Refresh(ex.ID)
+}
+
+func (u *user) ChangePassword(user entity.User, password string, access *entity.AccessToken) error {
+	ex, err := u.repo.GetByName(context.Background(), user.Name)
+	if err != nil {
+		return err
+	}
+
+	parser := jwt.NewParser(jwt.WithValidMethods([]string{"HS256"}), jwt.WithSubject(strconv.Itoa(ex.ID)), jwt.WithIssuer(u.params.Issuer))
+
+	tokenString := string(*access)
+	token, err := parser.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+		return []byte("123"), nil
+	})
+
+	if !token.Valid {
+		return err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(ex.Password), []byte(user.Password))
+	if err != nil {
+		return ErrPasswordIncorrect
+	}
+
+	hash, err := u.hashPassword(user.Password)
+	if err != nil {
+		return err
+	}
+
+	return u.repo.UpdatePassword(context.Background(), ex.ID, string(hash))
 }

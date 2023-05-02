@@ -14,11 +14,11 @@ import (
 )
 
 type token struct {
-	usecase *usecase.Token
+	usecase usecase.Token
 	logger  log.Logger
 }
 
-func NewTokenController(usecase *usecase.Token, logger log.Logger) *token {
+func NewTokenController(usecase usecase.Token, logger log.Logger) *token {
 	return &token{usecase, logger}
 }
 

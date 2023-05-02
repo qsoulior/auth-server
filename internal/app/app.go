@@ -23,7 +23,8 @@ func Run(cfg *Config, logger log.Logger) error {
 		return err
 	}
 
-	userUseCase := usecase.NewUser(tokenUseCase, repo.NewUserPostgres(postgres), cfg.Bcrypt.Cost)
+	userParams := usecase.UserParams{cfg.Name, cfg.Bcrypt.Cost}
+	userUseCase := usecase.NewUser(tokenUseCase, repo.NewUserPostgres(postgres), userParams)
 
 	server := NewServer(cfg, logger, userUseCase, tokenUseCase)
 	logger.Info("server created with address " + server.Addr)

@@ -23,7 +23,7 @@ func (logger *ConsoleLogger) Fatal(v ...any) {
 	logger.FatalLog.Fatal(v...)
 }
 
-func NewConsoleLogger() Logger {
+func NewConsoleLogger() *ConsoleLogger {
 	logger := new(ConsoleLogger)
 	logger.InfoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	logger.ErrorLog = log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime)

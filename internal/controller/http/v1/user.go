@@ -11,11 +11,11 @@ import (
 )
 
 type user struct {
-	usecase *usecase.User
+	usecase usecase.User
 	logger  log.Logger
 }
 
-func NewUserController(usecase *usecase.User, logger log.Logger) *user {
+func NewUserController(usecase usecase.User, logger log.Logger) *user {
 	return &user{usecase, logger}
 }
 
