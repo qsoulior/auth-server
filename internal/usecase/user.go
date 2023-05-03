@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/qsoulior/auth-server/internal/entity"
 	"github.com/qsoulior/auth-server/internal/repo"
+	"github.com/qsoulior/auth-server/pkg/jwt"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -68,18 +68,38 @@ func validatePassword(password string) error {
 }
 
 type UserParams struct {
-	Issuer   string
-	HashCost int
+	Issuer    string
+	Algorithm string
+	Key       any
+	HashCost  int
 }
 
 type user struct {
-	token  Token
-	repo   repo.User
-	params UserParams
+	token    Token
+	repo     repo.User
+	parser   jwt.Parser
+	hashCost int
 }
 
-func NewUser(tu Token, repo repo.User, params UserParams) *user {
-	return &user{tu, repo, params}
+func NewUser(tu Token, repo repo.User, params UserParams) (*user, error) {
+	parser, err := jwt.NewParser(params.Issuer, params.Algorithm, params.Key)
+	if err != nil {
+		return nil, err
+	}
+	return &user{tu, repo, parser, params.HashCost}, nil
+}
+
+func (u *user) auth(token entity.AccessToken) (int, error) {
+	sub, err := u.parser.Parse(string(token))
+	if err != nil {
+		return 0, err
+	}
+
+	id, err := strconv.Atoi(sub)
+	if err != nil {
+		return 0, errors.New("user id is invalid")
+	}
+	return id, nil
 }
 
 func (u *user) hashPassword(password string) ([]byte, error) {
@@ -87,7 +107,7 @@ func (u *user) hashPassword(password string) ([]byte, error) {
 		return nil, err
 	}
 
-	return bcrypt.GenerateFromPassword([]byte(password), u.params.HashCost)
+	return bcrypt.GenerateFromPassword([]byte(password), u.hashCost)
 }
 
 func (u *user) SignUp(user entity.User) error {
@@ -111,46 +131,40 @@ func (u *user) SignUp(user entity.User) error {
 	return u.repo.Create(context.Background(), user)
 }
 
-func (u *user) SignIn(user entity.User) (*entity.AccessToken, *entity.RefreshToken, error) {
+func (u *user) SignIn(user entity.User) (entity.AccessToken, *entity.RefreshToken, error) {
 	ex, err := u.repo.GetByName(context.Background(), user.Name)
 	if err != nil {
-		return nil, nil, err
+		return "", nil, err
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(ex.Password), []byte(user.Password))
 	if err != nil {
-		return nil, nil, ErrPasswordIncorrect
+		return "", nil, ErrPasswordIncorrect
 	}
 
 	return u.token.Refresh(ex.ID)
 }
 
-func (u *user) ChangePassword(user entity.User, password string, access *entity.AccessToken) error {
-	ex, err := u.repo.GetByName(context.Background(), user.Name)
+func (u *user) ChangePassword(password string, newPassword string, accessToken entity.AccessToken) error {
+	id, err := u.auth(accessToken)
 	if err != nil {
 		return err
 	}
 
-	parser := jwt.NewParser(jwt.WithValidMethods([]string{"HS256"}), jwt.WithSubject(strconv.Itoa(ex.ID)), jwt.WithIssuer(u.params.Issuer))
-
-	tokenString := string(*access)
-	token, err := parser.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
-		return []byte("123"), nil
-	})
-
-	if !token.Valid {
+	user, err := u.repo.GetByID(context.Background(), id)
+	if err != nil {
 		return err
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(ex.Password), []byte(user.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
 		return ErrPasswordIncorrect
 	}
 
-	hash, err := u.hashPassword(user.Password)
+	hash, err := u.hashPassword(newPassword)
 	if err != nil {
 		return err
 	}
 
-	return u.repo.UpdatePassword(context.Background(), ex.ID, string(hash))
+	return u.repo.UpdatePassword(context.Background(), id, string(hash))
 }

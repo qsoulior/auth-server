@@ -6,16 +6,15 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/qsoulior/auth-server/internal/entity"
 	"github.com/qsoulior/auth-server/internal/repo"
+	"github.com/qsoulior/auth-server/pkg/jwt"
 	"github.com/qsoulior/auth-server/pkg/uuid"
 )
 
 var (
 	ErrTokenIncorrect = errors.New("token is incorrect")
 	ErrTokenExpired   = errors.New("token is expired")
-	ErrAlgInvalid     = errors.New("algorithm is invalid")
 )
 
 type TokenParams struct {
@@ -25,23 +24,23 @@ type TokenParams struct {
 }
 
 type token struct {
-	repo   repo.Token
-	params TokenParams
+	repo    repo.Token
+	builder jwt.Builder
 }
 
 func NewToken(repo repo.Token, params TokenParams) (*token, error) {
-	for _, algorithm := range jwt.GetAlgorithms() {
-		if params.Algorithm == algorithm {
-			return &token{repo, params}, nil
-		}
+	builder, err := jwt.NewBuilder(params.Issuer, params.Algorithm, params.Key)
+	if err != nil {
+		return nil, err
 	}
-	return nil, ErrAlgInvalid
+
+	return &token{repo, builder}, nil
 }
 
-func (t *token) Refresh(userID int) (*entity.AccessToken, *entity.RefreshToken, error) {
+func (t *token) Refresh(userID int) (entity.AccessToken, *entity.RefreshToken, error) {
 	data, err := uuid.New()
 	if err != nil {
-		return nil, nil, err
+		return "", nil, err
 	}
 
 	refreshToken := entity.RefreshToken{
@@ -51,25 +50,17 @@ func (t *token) Refresh(userID int) (*entity.AccessToken, *entity.RefreshToken, 
 
 	err = t.repo.Create(context.Background(), refreshToken, userID)
 	if err != nil {
-		return nil, nil, err
+		return "", nil, err
 	}
 
-	method := jwt.GetSigningMethod(t.params.Algorithm)
-	claims := &jwt.RegisteredClaims{
-		Issuer:    t.params.Issuer,
-		Subject:   strconv.Itoa(userID),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
-	}
-	token := jwt.NewWithClaims(method, claims)
-
-	tokenStr, err := token.SignedString(t.params.Key)
+	token, err := t.builder.Build(strconv.Itoa(userID))
 	if err != nil {
-		return nil, nil, err
+		return "", nil, err
 	}
 
-	accessToken := entity.AccessToken(tokenStr)
+	accessToken := entity.AccessToken(token)
 
-	return &accessToken, &refreshToken, nil
+	return accessToken, &refreshToken, nil
 }
 
 func (t *token) getToken(data uuid.UUID) (*entity.RefreshToken, error) {
@@ -84,14 +75,14 @@ func (t *token) getToken(data uuid.UUID) (*entity.RefreshToken, error) {
 	return token, nil
 }
 
-func (t *token) RefreshSilent(data uuid.UUID) (*entity.AccessToken, *entity.RefreshToken, error) {
+func (t *token) RefreshSilent(data uuid.UUID) (entity.AccessToken, *entity.RefreshToken, error) {
 	token, err := t.getToken(data)
 	if err != nil {
-		return nil, nil, err
+		return "", nil, err
 	}
 
 	if err := t.repo.DeleteByID(context.Background(), token.ID); err != nil {
-		return nil, nil, err
+		return "", nil, err
 	}
 
 	return t.Refresh(token.UserID)

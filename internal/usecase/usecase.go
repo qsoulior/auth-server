@@ -7,12 +7,12 @@ import (
 
 type User interface {
 	SignUp(user entity.User) error
-	SignIn(user entity.User) (*entity.AccessToken, *entity.RefreshToken, error)
-	ChangePassword(user entity.User, password string, access *entity.AccessToken) error
+	SignIn(user entity.User) (entity.AccessToken, *entity.RefreshToken, error)
+	ChangePassword(password string, newPassword string, accessToken entity.AccessToken) error
 }
 
 type Token interface {
-	Refresh(userID int) (*entity.AccessToken, *entity.RefreshToken, error)
-	RefreshSilent(data uuid.UUID) (*entity.AccessToken, *entity.RefreshToken, error)
+	Refresh(userID int) (entity.AccessToken, *entity.RefreshToken, error)
+	RefreshSilent(data uuid.UUID) (entity.AccessToken, *entity.RefreshToken, error)
 	Revoke(data uuid.UUID) error
 }
