@@ -110,7 +110,7 @@ func (u *user) hashPassword(password string) ([]byte, error) {
 	return bcrypt.GenerateFromPassword([]byte(password), u.hashCost)
 }
 
-func (u *user) SignUp(user entity.User) error {
+func (u *user) SignUp(user *entity.User) error {
 	_, err := u.repo.GetByName(context.Background(), user.Name)
 	if err == nil {
 		return ErrUserExists
@@ -131,7 +131,7 @@ func (u *user) SignUp(user entity.User) error {
 	return u.repo.Create(context.Background(), user)
 }
 
-func (u *user) SignIn(user entity.User) (entity.AccessToken, *entity.RefreshToken, error) {
+func (u *user) SignIn(user *entity.User) (entity.AccessToken, *entity.RefreshToken, error) {
 	ex, err := u.repo.GetByName(context.Background(), user.Name)
 	if err != nil {
 		return "", nil, err

@@ -6,8 +6,8 @@ import (
 )
 
 type User interface {
-	SignUp(user entity.User) error
-	SignIn(user entity.User) (entity.AccessToken, *entity.RefreshToken, error)
+	SignUp(user *entity.User) error
+	SignIn(user *entity.User) (entity.AccessToken, *entity.RefreshToken, error)
 	ChangePassword(password string, newPassword string, accessToken entity.AccessToken) error
 }
 
