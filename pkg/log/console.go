@@ -11,16 +11,16 @@ type ConsoleLogger struct {
 	FatalLog *log.Logger
 }
 
-func (logger *ConsoleLogger) Info(v ...any) {
-	logger.InfoLog.Print(v...)
+func (logger *ConsoleLogger) Info(format string, v ...any) {
+	logger.InfoLog.Printf(format, v...)
 }
 
-func (logger *ConsoleLogger) Error(v ...any) {
-	logger.ErrorLog.Print(v...)
+func (logger *ConsoleLogger) Error(format string, v ...any) {
+	logger.ErrorLog.Printf(format, v...)
 }
 
-func (logger *ConsoleLogger) Fatal(v ...any) {
-	logger.FatalLog.Fatal(v...)
+func (logger *ConsoleLogger) Fatal(format string, v ...any) {
+	logger.FatalLog.Fatalf(format, v...)
 }
 
 func NewConsoleLogger() *ConsoleLogger {
