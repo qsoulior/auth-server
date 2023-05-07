@@ -2,7 +2,9 @@ package v1
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
+	"strings"
 
 	controller "github.com/qsoulior/auth-server/internal/controller/http"
 	"github.com/qsoulior/auth-server/internal/entity"
@@ -19,82 +21,105 @@ func NewUserController(usecase usecase.User, logger log.Logger) *user {
 	return &user{usecase, logger}
 }
 
-func (u *user) SignUp() http.Handler {
-	controllerName := "sign up"
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		address := r.RemoteAddr
-
-		if r.Method != http.MethodPost {
-			err := controller.MethodNotAllowed(w, r, []string{http.MethodPost})
-			u.logger.Error(controller.Error{err, controllerName, address})
-			return
+func (u *user) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	switch r.URL.Path {
+	case "/signup":
+		if r.Method == http.MethodPost {
+			u.SignUp(w, r)
+		} else {
+			controller.MethodNotAllowed(w, r, []string{http.MethodPost})
 		}
-
-		w.Header().Set("Content-Type", controller.ContentType)
-		if r.Header.Get("Content-Type") != controller.ContentType {
-			err := controller.UnsupportedMediaType(w, r, controller.ContentType)
-			u.logger.Error(controller.Error{err, controllerName, address})
-			return
+	case "/signin":
+		if r.Method == http.MethodPost {
+			u.SignIn(w, r)
+		} else {
+			controller.MethodNotAllowed(w, r, []string{http.MethodPost})
 		}
-
-		var user entity.User
-		d := json.NewDecoder(r.Body)
-		err := d.Decode(&user)
-		if err != nil {
-			err := controller.ErrorJSON(w, "decoding error", http.StatusBadRequest)
-			u.logger.Error(controller.Error{err, controllerName, address})
-			return
+	case "/password":
+		if r.Method == http.MethodPut {
+			u.ChangePassword(w, r)
+		} else {
+			controller.MethodNotAllowed(w, r, []string{http.MethodPut})
 		}
+	default:
+		controller.NotFound(w, r)
+	}
+}
 
-		err = u.usecase.SignUp(user)
-		if err != nil {
-			err := controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
-			u.logger.Error(controller.Error{err, controllerName, address})
-			return
-		}
+func (u *user) SignUp(w http.ResponseWriter, r *http.Request) {
+	user, err := readUser(r)
+	if err != nil {
+		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-		w.WriteHeader(200)
-		e := json.NewEncoder(w)
-		e.Encode(map[string]string{
-			"message": "success",
-		})
+	err = u.usecase.SignUp(user)
+	if err != nil {
+		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(200)
+	e := json.NewEncoder(w)
+	e.Encode(map[string]string{
+		"message": "success",
 	})
 }
 
-func (u *user) SignIn() http.Handler {
-	controllerName := "sign in"
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		address := r.RemoteAddr
+func (u *user) SignIn(w http.ResponseWriter, r *http.Request) {
+	user, err := readUser(r)
+	if err != nil {
+		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-		if r.Method != http.MethodPost {
-			err := controller.MethodNotAllowed(w, r, []string{http.MethodPost})
-			u.logger.Error(controller.Error{err, controllerName, address})
-			return
-		}
+	accessToken, refreshToken, err := u.usecase.SignIn(user)
+	if err != nil {
+		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-		w.Header().Set("Content-Type", controller.ContentType)
-		if r.Header.Get("Content-Type") != controller.ContentType {
-			err := controller.UnsupportedMediaType(w, r, controller.ContentType)
-			u.logger.Error(controller.Error{err, controllerName, address})
-			return
-		}
+	writeToken(w, accessToken, refreshToken)
+}
 
-		var user entity.User
-		d := json.NewDecoder(r.Body)
-		err := d.Decode(&user)
-		if err != nil {
-			err := controller.ErrorJSON(w, "decoding error", http.StatusBadRequest)
-			u.logger.Error(controller.Error{err, controllerName, address})
-			return
-		}
+func (u *user) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	authorization := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
+	if len(authorization) < 2 || authorization[0] != "Bearer" {
+		controller.ErrorJSON(w, "invalid authorization header", http.StatusBadRequest)
+		return
+	}
+	accessToken := entity.AccessToken(authorization[1])
 
-		accessToken, refreshToken, err := u.usecase.SignIn(user)
-		if err != nil {
-			err := controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
-			u.logger.Error(controller.Error{err, controllerName, address})
-			return
-		}
+	var body struct {
+		CurrentPassword string `json:"current_password"`
+		NewPassword     string `json:"new_password"`
+	}
+	d := json.NewDecoder(r.Body)
+	err := d.Decode(&body)
+	if err != nil {
+		controller.ErrorJSON(w, "decoding error", http.StatusBadRequest)
+		return
+	}
 
-		writeToken(w, accessToken, refreshToken)
+	err = u.usecase.ChangePassword(body.CurrentPassword, body.NewPassword, accessToken)
+	if err != nil {
+		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(200)
+	e := json.NewEncoder(w)
+	e.Encode(map[string]string{
+		"message": "success",
 	})
+}
+
+func readUser(r *http.Request) (*entity.User, error) {
+	user := new(entity.User)
+	d := json.NewDecoder(r.Body)
+	err := d.Decode(user)
+	if err != nil {
+		return nil, errors.New("decoding error")
+	}
+	return user, nil
 }

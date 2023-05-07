@@ -23,44 +23,42 @@ func NewTokenController(usecase usecase.Token, logger log.Logger) *token {
 }
 
 func (t *token) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	controllerName := "token"
-	address := r.RemoteAddr
-	if r.Method != http.MethodPost && r.Method != http.MethodDelete {
-		err := controller.MethodNotAllowed(w, r, []string{http.MethodPost, http.MethodDelete})
-		t.logger.Error(controller.Error{err, controllerName, address})
-		return
+	switch r.Method {
+	case http.MethodPost:
+		t.Refresh(w, r)
+	case http.MethodDelete:
+		t.Revoke(w, r)
+	default:
+		controller.MethodNotAllowed(w, r, []string{http.MethodPost, http.MethodDelete})
 	}
+}
 
-	w.Header().Set("Content-Type", controller.ContentType)
-	if r.Header.Get("Content-Type") != controller.ContentType {
-		err := controller.UnsupportedMediaType(w, r, controller.ContentType)
-		t.logger.Error(controller.Error{err, controllerName, address})
-		return
-	}
-
+func (t *token) Refresh(w http.ResponseWriter, r *http.Request) {
 	token, err := readToken(r)
 	if err != nil {
-		err := controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
-		t.logger.Error(controller.Error{err, controllerName, address})
+		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if r.Method == http.MethodPost {
-		accessToken, refreshToken, err := t.usecase.RefreshSilent(token)
-		if err != nil {
-			err := controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
-			t.logger.Error(controller.Error{err, controllerName, address})
-			return
-		}
+	accessToken, refreshToken, err := t.usecase.RefreshSilent(token)
+	if err != nil {
+		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-		writeToken(w, accessToken, refreshToken)
+	writeToken(w, accessToken, refreshToken)
+}
+
+func (t *token) Revoke(w http.ResponseWriter, r *http.Request) {
+	token, err := readToken(r)
+	if err != nil {
+		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	err = t.usecase.Revoke(token)
 	if err != nil {
-		err := controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
-		t.logger.Error(controller.Error{err, controllerName, address})
+		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	deleteToken(w)
@@ -94,7 +92,7 @@ func readToken(r *http.Request) (uuid.UUID, error) {
 	return uuid.FromString(data)
 }
 
-func writeToken(w http.ResponseWriter, access *entity.AccessToken, refresh *entity.RefreshToken) {
+func writeToken(w http.ResponseWriter, access entity.AccessToken, refresh *entity.RefreshToken) {
 	cookie := &http.Cookie{
 		Name:     "refresh_token",
 		Value:    refresh.Data.String(),

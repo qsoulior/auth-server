@@ -9,7 +9,7 @@ func main() {
 	logger := log.NewConsoleLogger()
 	cfg, err := app.NewConfig()
 	if err != nil {
-		logger.Fatal(err)
+		logger.Fatal("%s", err)
 	}
-	logger.Fatal(app.Run(cfg, logger))
+	logger.Fatal("%s", app.Run(cfg, logger))
 }

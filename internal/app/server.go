@@ -18,8 +18,9 @@ func NewServer(cfg *Config, logger log.Logger, user usecase.User, token usecase.
 	mux := http.NewServeMux()
 	mux.Handle("/", controller.Index())
 	mux.Handle(api+"/token", tokenController)
-	mux.Handle(api+"/user", userController.SignUp())
-	mux.Handle(api+"/user/signin", userController.SignIn())
+	mux.Handle(api+"/user/", http.StripPrefix(api+"/user", userController))
+
+	handler := controller.LoggerMiddleware(controller.ContentTypeMiddleware(mux, "application/json"), logger)
 
 	host := ""
 	if cfg.Env == EnvDev {
@@ -28,7 +29,7 @@ func NewServer(cfg *Config, logger log.Logger, user usecase.User, token usecase.
 
 	server := &http.Server{
 		Addr:     fmt.Sprintf("%s:%s", host, cfg.HTTP.Port),
-		Handler:  mux,
+		Handler:  handler,
 		ErrorLog: logger.(*log.ConsoleLogger).ErrorLog,
 	}
 
