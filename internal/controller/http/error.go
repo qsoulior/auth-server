@@ -22,7 +22,6 @@ func MethodNotAllowed(w http.ResponseWriter, r *http.Request, methods []string) 
 }
 
 func UnsupportedMediaType(w http.ResponseWriter, r *http.Request, contentType string) {
-	w.Header().Set("Content-Type", contentType)
 	ErrorJSON(w, "content type must be "+contentType, http.StatusUnsupportedMediaType)
 }
 

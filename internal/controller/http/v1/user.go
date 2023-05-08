@@ -9,16 +9,14 @@ import (
 	controller "github.com/qsoulior/auth-server/internal/controller/http"
 	"github.com/qsoulior/auth-server/internal/entity"
 	"github.com/qsoulior/auth-server/internal/usecase"
-	"github.com/qsoulior/auth-server/pkg/log"
 )
 
 type user struct {
 	usecase usecase.User
-	logger  log.Logger
 }
 
-func NewUserController(usecase usecase.User, logger log.Logger) *user {
-	return &user{usecase, logger}
+func NewUserController(usecase usecase.User) *user {
+	return &user{usecase}
 }
 
 func (u *user) ServeHTTP(w http.ResponseWriter, r *http.Request) {

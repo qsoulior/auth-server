@@ -9,27 +9,39 @@ import (
 	controller "github.com/qsoulior/auth-server/internal/controller/http"
 	"github.com/qsoulior/auth-server/internal/entity"
 	"github.com/qsoulior/auth-server/internal/usecase"
-	"github.com/qsoulior/auth-server/pkg/log"
 	"github.com/qsoulior/auth-server/pkg/uuid"
 )
 
 type token struct {
 	usecase usecase.Token
-	logger  log.Logger
 }
 
-func NewTokenController(usecase usecase.Token, logger log.Logger) *token {
-	return &token{usecase, logger}
+func NewTokenController(usecase usecase.Token) *token {
+	return &token{usecase}
 }
 
 func (t *token) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodPost:
-		t.Refresh(w, r)
-	case http.MethodDelete:
-		t.Revoke(w, r)
+	switch r.URL.Path {
+	case "/refresh":
+		if r.Method == http.MethodPost {
+			t.Refresh(w, r)
+		} else {
+			controller.MethodNotAllowed(w, r, []string{http.MethodPost})
+		}
+	case "/revoke":
+		if r.Method == http.MethodPost {
+			t.Revoke(w, r)
+		} else {
+			controller.MethodNotAllowed(w, r, []string{http.MethodPost})
+		}
+	case "/revoke-all":
+		if r.Method == http.MethodPost {
+			t.RevokeAll(w, r)
+		} else {
+			controller.MethodNotAllowed(w, r, []string{http.MethodPost})
+		}
 	default:
-		controller.MethodNotAllowed(w, r, []string{http.MethodPost, http.MethodDelete})
+		controller.NotFound(w, r)
 	}
 }
 
@@ -43,6 +55,9 @@ func (t *token) Refresh(w http.ResponseWriter, r *http.Request) {
 	accessToken, refreshToken, err := t.usecase.RefreshSilent(token)
 	if err != nil {
 		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
+		if err == usecase.ErrTokenExpired {
+			deleteToken(w)
+		}
 		return
 	}
 
@@ -52,6 +67,9 @@ func (t *token) Refresh(w http.ResponseWriter, r *http.Request) {
 func (t *token) Revoke(w http.ResponseWriter, r *http.Request) {
 	token, err := readToken(r)
 	if err != nil {
+		if err == usecase.ErrTokenExpired {
+			deleteToken(w)
+		}
 		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -62,6 +80,23 @@ func (t *token) Revoke(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	deleteToken(w)
+	writeSuccess(w)
+}
+
+func (t *token) RevokeAll(w http.ResponseWriter, r *http.Request) {
+	token, err := readToken(r)
+	if err != nil {
+		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = t.usecase.RevokeAll(token)
+	if err != nil {
+		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	deleteToken(w)
+	writeSuccess(w)
 }
 
 func readToken(r *http.Request) (uuid.UUID, error) {
@@ -112,6 +147,15 @@ func writeToken(w http.ResponseWriter, access entity.AccessToken, refresh *entit
 	})
 }
 
+func writeSuccess(w http.ResponseWriter) {
+	w.WriteHeader(200)
+
+	e := json.NewEncoder(w)
+	e.Encode(map[string]string{
+		"message": "success",
+	})
+}
+
 func deleteToken(w http.ResponseWriter) {
 	cookie := &http.Cookie{
 		Name:    "refresh_token",
@@ -119,10 +163,4 @@ func deleteToken(w http.ResponseWriter) {
 	}
 
 	http.SetCookie(w, cookie)
-	w.WriteHeader(200)
-
-	e := json.NewEncoder(w)
-	e.Encode(map[string]string{
-		"message": "success",
-	})
 }

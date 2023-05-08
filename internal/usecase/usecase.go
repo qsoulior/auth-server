@@ -15,4 +15,5 @@ type Token interface {
 	Refresh(userID int) (entity.AccessToken, *entity.RefreshToken, error)
 	RefreshSilent(data uuid.UUID) (entity.AccessToken, *entity.RefreshToken, error)
 	Revoke(data uuid.UUID) error
+	RevokeAll(data uuid.UUID) error
 }

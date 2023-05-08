@@ -96,3 +96,12 @@ func (t *token) Revoke(data uuid.UUID) error {
 
 	return t.repo.DeleteByID(context.Background(), token.ID)
 }
+
+func (t *token) RevokeAll(data uuid.UUID) error {
+	token, err := t.getToken(data)
+	if err != nil {
+		return err
+	}
+
+	return t.repo.DeleteByUser(context.Background(), token.UserID)
+}
