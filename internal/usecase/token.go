@@ -37,17 +37,12 @@ func NewToken(repo repo.Token, params TokenParams) (*token, error) {
 }
 
 func (t *token) Refresh(userID uuid.UUID) (entity.AccessToken, *entity.RefreshToken, error) {
-	_, err := uuid.New()
-	if err != nil {
-		return "", nil, err
-	}
-
 	refreshToken := &entity.RefreshToken{
 		ExpiresAt: time.Now().AddDate(0, 0, 30),
 		UserID:    userID,
 	}
 
-	refreshToken, err = t.repo.Create(context.Background(), refreshToken)
+	refreshToken, err := t.repo.Create(context.Background(), refreshToken)
 	if err != nil {
 		return "", nil, err
 	}

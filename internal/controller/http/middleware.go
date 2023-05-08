@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/qsoulior/auth-server/pkg/log"
@@ -9,7 +10,12 @@ import (
 
 func ContentTypeMiddleware(handler http.Handler, contentType string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Content-Type") != contentType {
+		ct := r.Header.Get("Content-Type")
+		if i := strings.IndexRune(ct, ';'); i != -1 {
+			ct = ct[0:i]
+		}
+
+		if ct != contentType {
 			UnsupportedMediaType(w, r, contentType)
 			return
 		}
