@@ -1,7 +1,9 @@
 package entity
 
+import "github.com/qsoulior/auth-server/pkg/uuid"
+
 type User struct {
-	ID       int    `json:"-"`
-	Name     string `json:"name"`
-	Password string `json:"password"`
+	ID       uuid.UUID `json:"-"`
+	Name     string    `json:"name"`
+	Password string    `json:"password"`
 }

@@ -3,7 +3,6 @@ package usecase
 import (
 	"context"
 	"errors"
-	"strconv"
 	"time"
 
 	"github.com/qsoulior/auth-server/internal/entity"
@@ -37,34 +36,34 @@ func NewToken(repo repo.Token, params TokenParams) (*token, error) {
 	return &token{repo, builder}, nil
 }
 
-func (t *token) Refresh(userID int) (entity.AccessToken, *entity.RefreshToken, error) {
-	data, err := uuid.New()
+func (t *token) Refresh(userID uuid.UUID) (entity.AccessToken, *entity.RefreshToken, error) {
+	_, err := uuid.New()
 	if err != nil {
 		return "", nil, err
 	}
 
-	refreshToken := entity.RefreshToken{
-		Data:      data,
+	refreshToken := &entity.RefreshToken{
 		ExpiresAt: time.Now().AddDate(0, 0, 30),
+		UserID:    userID,
 	}
 
-	err = t.repo.Create(context.Background(), refreshToken, userID)
+	refreshToken, err = t.repo.Create(context.Background(), refreshToken)
 	if err != nil {
 		return "", nil, err
 	}
 
-	token, err := t.builder.Build(strconv.Itoa(userID))
+	token, err := t.builder.Build(userID.String())
 	if err != nil {
 		return "", nil, err
 	}
 
 	accessToken := entity.AccessToken(token)
 
-	return accessToken, &refreshToken, nil
+	return accessToken, refreshToken, nil
 }
 
-func (t *token) getToken(data uuid.UUID) (*entity.RefreshToken, error) {
-	token, err := t.repo.GetByData(context.Background(), data)
+func (t *token) getToken(id uuid.UUID) (*entity.RefreshToken, error) {
+	token, err := t.repo.GetByID(context.Background(), id)
 	if err != nil {
 		return nil, ErrTokenIncorrect
 	}
@@ -75,8 +74,8 @@ func (t *token) getToken(data uuid.UUID) (*entity.RefreshToken, error) {
 	return token, nil
 }
 
-func (t *token) RefreshSilent(data uuid.UUID) (entity.AccessToken, *entity.RefreshToken, error) {
-	token, err := t.getToken(data)
+func (t *token) RefreshSilent(id uuid.UUID) (entity.AccessToken, *entity.RefreshToken, error) {
+	token, err := t.getToken(id)
 	if err != nil {
 		return "", nil, err
 	}
@@ -88,8 +87,8 @@ func (t *token) RefreshSilent(data uuid.UUID) (entity.AccessToken, *entity.Refre
 	return t.Refresh(token.UserID)
 }
 
-func (t *token) Revoke(data uuid.UUID) error {
-	token, err := t.getToken(data)
+func (t *token) Revoke(id uuid.UUID) error {
+	token, err := t.getToken(id)
 	if err != nil {
 		return err
 	}
@@ -97,8 +96,8 @@ func (t *token) Revoke(data uuid.UUID) error {
 	return t.repo.DeleteByID(context.Background(), token.ID)
 }
 
-func (t *token) RevokeAll(data uuid.UUID) error {
-	token, err := t.getToken(data)
+func (t *token) RevokeAll(id uuid.UUID) error {
+	token, err := t.getToken(id)
 	if err != nil {
 		return err
 	}

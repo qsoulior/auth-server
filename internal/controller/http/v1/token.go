@@ -130,7 +130,7 @@ func readToken(r *http.Request) (uuid.UUID, error) {
 func writeToken(w http.ResponseWriter, access entity.AccessToken, refresh *entity.RefreshToken) {
 	cookie := &http.Cookie{
 		Name:     "refresh_token",
-		Value:    refresh.Data.String(),
+		Value:    refresh.ID.String(),
 		Expires:  refresh.ExpiresAt,
 		Secure:   true,
 		HttpOnly: true,

@@ -51,7 +51,7 @@ func (u *user) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = u.usecase.SignUp(user)
+	_, err = u.usecase.SignUp(user)
 	if err != nil {
 		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return

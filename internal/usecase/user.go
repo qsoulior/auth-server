@@ -3,12 +3,12 @@ package usecase
 import (
 	"context"
 	"errors"
-	"strconv"
 	"strings"
 
 	"github.com/qsoulior/auth-server/internal/entity"
 	"github.com/qsoulior/auth-server/internal/repo"
 	"github.com/qsoulior/auth-server/pkg/jwt"
+	"github.com/qsoulior/auth-server/pkg/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -89,15 +89,16 @@ func NewUser(tu Token, repo repo.User, params UserParams) (*user, error) {
 	return &user{tu, repo, parser, params.HashCost}, nil
 }
 
-func (u *user) auth(token entity.AccessToken) (int, error) {
+func (u *user) auth(token entity.AccessToken) (uuid.UUID, error) {
+	var id uuid.UUID
 	sub, err := u.parser.Parse(string(token))
 	if err != nil {
-		return 0, err
+		return id, err
 	}
 
-	id, err := strconv.Atoi(sub)
+	id, err = uuid.FromString(sub)
 	if err != nil {
-		return 0, errors.New("user id is invalid")
+		return id, errors.New("user id is invalid")
 	}
 	return id, nil
 }
@@ -110,21 +111,21 @@ func (u *user) hashPassword(password string) ([]byte, error) {
 	return bcrypt.GenerateFromPassword([]byte(password), u.hashCost)
 }
 
-func (u *user) SignUp(user *entity.User) error {
+func (u *user) SignUp(user *entity.User) (*entity.User, error) {
 	_, err := u.repo.GetByName(context.Background(), user.Name)
 	if err == nil {
-		return ErrUserExists
+		return nil, ErrUserExists
 	} else if err != repo.ErrUserNotExist {
-		return err
+		return nil, err
 	}
 
 	if err := validateName(user.Name); err != nil {
-		return err
+		return nil, err
 	}
 
 	hash, err := u.hashPassword(user.Password)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	user.Password = string(hash)
