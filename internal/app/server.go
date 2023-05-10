@@ -28,9 +28,8 @@ func NewServer(cfg *Config, logger log.Logger, user usecase.User, token usecase.
 	}
 
 	server := &http.Server{
-		Addr:     fmt.Sprintf("%s:%s", host, cfg.HTTP.Port),
-		Handler:  handler,
-		ErrorLog: logger.(*log.ConsoleLogger).ErrorLog,
+		Addr:    fmt.Sprintf("%s:%s", host, cfg.HTTP.Port),
+		Handler: handler,
 	}
 
 	return server

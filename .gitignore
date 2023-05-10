@@ -15,7 +15,7 @@
 # Dependency directories
 # vendor/
 
-### VisualStudioCode ###
+### Visual Studio Code ###
 .vscode/
 
 ### Configuration ###

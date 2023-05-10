@@ -6,27 +6,35 @@ import (
 )
 
 type ConsoleLogger struct {
-	InfoLog  *log.Logger
-	ErrorLog *log.Logger
-	FatalLog *log.Logger
+	*log.Logger
+}
+
+func (logger *ConsoleLogger) Debug(format string, v ...any) {
+	logger.SetOutput(os.Stdout)
+	logger.SetPrefix("DEBUG\t")
+	logger.Printf(format, v...)
 }
 
 func (logger *ConsoleLogger) Info(format string, v ...any) {
-	logger.InfoLog.Printf(format, v...)
+	logger.SetOutput(os.Stdout)
+	logger.SetPrefix("INFO\t")
+	logger.Printf(format, v...)
 }
 
 func (logger *ConsoleLogger) Error(format string, v ...any) {
-	logger.ErrorLog.Printf(format, v...)
+	logger.SetOutput(os.Stderr)
+	logger.SetPrefix("ERROR\t")
+	logger.Printf(format, v...)
 }
 
 func (logger *ConsoleLogger) Fatal(format string, v ...any) {
-	logger.FatalLog.Fatalf(format, v...)
+	logger.SetOutput(os.Stderr)
+	logger.SetPrefix("FATAL\t")
+	logger.Fatalf(format, v...)
 }
 
 func NewConsoleLogger() *ConsoleLogger {
-	logger := new(ConsoleLogger)
-	logger.InfoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
-	logger.ErrorLog = log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime)
-	logger.FatalLog = log.New(os.Stderr, "FATAL\t", log.Ldate|log.Ltime)
-	return logger
+	return &ConsoleLogger{
+		log.New(os.Stdout, "", log.Ldate|log.Ltime),
+	}
 }
