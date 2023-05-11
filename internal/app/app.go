@@ -20,7 +20,7 @@ func Run(cfg *Config, logger log.Logger) error {
 	logger.Info("database connection established")
 
 	// jwt module initializaion
-	builder, parser, err := NewJWT(cfg.Key.PrivatePath, cfg.Key.PublicPath, cfg.Name, cfg.JWT.Alg)
+	builder, parser, err := NewJWT(cfg)
 	if err != nil {
 		return fmt.Errorf("failed to init jwt module: %w", err)
 	}
