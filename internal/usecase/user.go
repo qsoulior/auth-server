@@ -68,25 +68,20 @@ func validatePassword(password string) error {
 }
 
 type UserParams struct {
-	Issuer    string
-	Algorithm string
-	Key       any
-	HashCost  int
+	Parser   jwt.Parser
+	HashCost int
 }
 
 type user struct {
-	token    Token
-	repo     repo.User
-	parser   jwt.Parser
+	token  Token
+	repo   repo.User
+	parser jwt.Parser
+
 	hashCost int
 }
 
-func NewUser(tu Token, repo repo.User, params UserParams) (*user, error) {
-	parser, err := jwt.NewParser(params.Issuer, params.Algorithm, params.Key)
-	if err != nil {
-		return nil, err
-	}
-	return &user{tu, repo, parser, params.HashCost}, nil
+func NewUser(tu Token, repo repo.User, params UserParams) *user {
+	return &user{tu, repo, params.Parser, params.HashCost}
 }
 
 func (u *user) auth(token entity.AccessToken) (uuid.UUID, error) {

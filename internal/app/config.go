@@ -15,28 +15,40 @@ type (
 	Config struct {
 		Name     string      `env:"APP_NAME" default:"auth"`
 		Env      Environment `env:"APP_ENV" default:"development"`
+		Key      KeyConfig
 		HTTP     HTTPConfig
+		Postgres PostgresConfig
+		RT       RTConfig
 		JWT      JWTConfig
 		Bcrypt   BcryptConfig
-		Postgres PostgresConfig
 	}
 
 	Environment string
+
+	KeyConfig struct {
+		PrivatePath string `env:"KEY_PRIVATE_PATH"`
+		PublicPath  string `env:"KEY_PUBLIC_PATH"`
+	}
 
 	HTTPConfig struct {
 		Port string `env:"HTTP_PORT" default:"8000"`
 	}
 
+	PostgresConfig struct {
+		URI string `env:"POSTGRES_URI"`
+	}
+
+	RTConfig struct {
+		Age int `env:"RT_AGE" default:"30"`
+	}
+
 	JWTConfig struct {
 		Alg string `env:"JWT_ALG" default:"HS256"`
+		Age int    `env:"JWT_AGE" default:"15"`
 	}
 
 	BcryptConfig struct {
 		Cost int `env:"BCRYPT_COST" default:"4"`
-	}
-
-	PostgresConfig struct {
-		URI string `env:"POSTGRES_URI"`
 	}
 )
 

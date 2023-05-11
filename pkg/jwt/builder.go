@@ -7,25 +7,30 @@ import (
 )
 
 type Builder interface {
-	Build(subject string) (string, error)
+	Build(subject string, age time.Duration) (string, error)
 }
 
 type builder struct {
-	*handler
+	params Params
+	method jwt.SigningMethod
 }
 
-func NewBuilder(issuer string, algorithm string, key any) (*builder, error) {
-	return new[builder](issuer, algorithm, key)
-}
-
-func (b *builder) Build(subject string) (string, error) {
-	method := jwt.GetSigningMethod(b.algorithm)
-	claims := &jwt.RegisteredClaims{
-		Issuer:    b.issuer,
-		Subject:   subject,
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+func NewBuilder(params Params) (*builder, error) {
+	method, err := GetSigningMethod(params.Algorithm)
+	if err != nil {
+		return nil, err
 	}
 
-	token := jwt.NewWithClaims(method, claims)
-	return token.SignedString(b.key)
+	return &builder{params, method}, nil
+}
+
+func (b *builder) Build(subject string, age time.Duration) (string, error) {
+	claims := &jwt.RegisteredClaims{
+		Issuer:    b.params.Issuer,
+		Subject:   subject,
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(age)),
+	}
+
+	token := jwt.NewWithClaims(b.method, claims)
+	return token.SignedString(b.params.Key)
 }

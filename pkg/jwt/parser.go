@@ -13,19 +13,25 @@ type Parser interface {
 }
 
 type parser struct {
-	*handler
+	params Params
+	method jwt.SigningMethod
 }
 
-func NewParser(issuer string, algorithm string, key any) (*parser, error) {
-	return new[parser](issuer, algorithm, key)
+func NewParser(params Params) (*parser, error) {
+	method, err := GetSigningMethod(params.Algorithm)
+	if err != nil {
+		return nil, err
+	}
+
+	return &parser{params, method}, nil
 }
 
 func (p *parser) Parse(tokenStr string) (string, error) {
-	parser := jwt.NewParser(jwt.WithValidMethods([]string{p.algorithm}), jwt.WithIssuer(p.issuer))
-
+	parser := jwt.NewParser(jwt.WithValidMethods([]string{p.params.Algorithm}), jwt.WithIssuer(p.params.Issuer))
 	token, err := parser.ParseWithClaims(tokenStr, &jwt.RegisteredClaims{}, func(t *jwt.Token) (any, error) {
-		return p.key, nil
+		return p.params.Key, nil
 	})
+
 	if err != nil {
 		return "", err
 	}
@@ -33,5 +39,6 @@ func (p *parser) Parse(tokenStr string) (string, error) {
 	if claims, ok := token.Claims.(*jwt.RegisteredClaims); ok {
 		return claims.Subject, nil
 	}
+
 	return "", ErrClaimsInvalid
 }

@@ -17,28 +17,26 @@ var (
 )
 
 type TokenParams struct {
-	Issuer    string
-	Algorithm string
-	Key       any
+	Builder    jwt.Builder
+	AccessAge  int
+	RefreshAge int
 }
 
 type token struct {
 	repo    repo.Token
 	builder jwt.Builder
+
+	accessAge  int
+	refreshAge int
 }
 
-func NewToken(repo repo.Token, params TokenParams) (*token, error) {
-	builder, err := jwt.NewBuilder(params.Issuer, params.Algorithm, params.Key)
-	if err != nil {
-		return nil, err
-	}
-
-	return &token{repo, builder}, nil
+func NewToken(repo repo.Token, params TokenParams) *token {
+	return &token{repo, params.Builder, params.AccessAge, params.RefreshAge}
 }
 
 func (t *token) Refresh(userID uuid.UUID) (entity.AccessToken, *entity.RefreshToken, error) {
 	refreshToken := &entity.RefreshToken{
-		ExpiresAt: time.Now().AddDate(0, 0, 30),
+		ExpiresAt: time.Now().AddDate(0, 0, t.refreshAge),
 		UserID:    userID,
 	}
 
@@ -47,7 +45,7 @@ func (t *token) Refresh(userID uuid.UUID) (entity.AccessToken, *entity.RefreshTo
 		return "", nil, err
 	}
 
-	token, err := t.builder.Build(userID.String())
+	token, err := t.builder.Build(userID.String(), time.Duration(t.accessAge)*time.Minute)
 	if err != nil {
 		return "", nil, err
 	}

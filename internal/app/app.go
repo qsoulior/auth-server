@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/qsoulior/auth-server/internal/repo"
 	"github.com/qsoulior/auth-server/internal/usecase"
@@ -10,26 +11,31 @@ import (
 )
 
 func Run(cfg *Config, logger log.Logger) error {
+	// database connection
 	postgres, err := db.NewPostgres(context.Background(), cfg.Postgres.URI)
 	if err != nil {
-		return err
+		return fmt.Errorf("database connection failed: %w", err)
 	}
 	defer postgres.Close()
 	logger.Info("database connection established")
 
-	tokenParams := usecase.TokenParams{cfg.Name, cfg.JWT.Alg, []byte("test")}
-	tokenUseCase, err := usecase.NewToken(repo.NewTokenPostgres(postgres), tokenParams)
+	// jwt module initializaion
+	builder, parser, err := NewJWT(cfg.Key.PrivatePath, cfg.Key.PublicPath, cfg.Name, cfg.JWT.Alg)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to init jwt module: %w", err)
 	}
 
-	userParams := usecase.UserParams{cfg.Name, cfg.JWT.Alg, []byte("test"), cfg.Bcrypt.Cost}
-	userUseCase, err := usecase.NewUser(tokenUseCase, repo.NewUserPostgres(postgres), userParams)
-	if err != nil {
-		return err
-	}
+	// usecases initialization
+	tokenRepo := repo.NewTokenPostgres(postgres)
+	tokenParams := usecase.TokenParams{builder, cfg.JWT.Age, cfg.RT.Age}
+	tokenUseCase := usecase.NewToken(tokenRepo, tokenParams)
 
+	userRepo := repo.NewUserPostgres(postgres)
+	userParams := usecase.UserParams{parser, cfg.Bcrypt.Cost}
+	userUseCase := usecase.NewUser(tokenUseCase, userRepo, userParams)
+
+	// server listening
 	server := NewServer(cfg, logger, userUseCase, tokenUseCase)
 	logger.Info("server created with address " + server.Addr)
-	return server.ListenAndServe()
+	return fmt.Errorf("server down: %w", server.ListenAndServe())
 }
