@@ -24,15 +24,18 @@ func Run(cfg *Config, logger log.Logger) error {
 	if err != nil {
 		return fmt.Errorf("failed to init jwt module: %w", err)
 	}
+	logger.Info("jwt module initialized")
 
 	// usecases initialization
 	tokenRepo := repo.NewTokenPostgres(postgres)
 	tokenParams := usecase.TokenParams{builder, cfg.JWT.Age, cfg.RT.Age}
 	tokenUseCase := usecase.NewToken(tokenRepo, tokenParams)
+	logger.Info("token usecase created")
 
 	userRepo := repo.NewUserPostgres(postgres)
 	userParams := usecase.UserParams{parser, cfg.Bcrypt.Cost}
 	userUseCase := usecase.NewUser(tokenUseCase, userRepo, userParams)
+	logger.Info("user usecase created")
 
 	// server listening
 	server := NewServer(cfg, logger, userUseCase, tokenUseCase)
