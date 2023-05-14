@@ -17,10 +17,6 @@ func NewTokenPostgres(db *db.Postgres) *tokenPostgres {
 	return &tokenPostgres{db}
 }
 
-func tokenPGError(fn string, err error) error {
-	return &Error{"tokenPostgres", fn, err}
-}
-
 func (t *tokenPostgres) Create(ctx context.Context, token entity.RefreshToken) (*entity.RefreshToken, error) {
 	const (
 		fn    = "Create"
@@ -30,7 +26,7 @@ func (t *tokenPostgres) Create(ctx context.Context, token entity.RefreshToken) (
 	var created entity.RefreshToken
 	err := t.Pool.QueryRow(ctx, query, token.ExpiresAt, token.UserID).Scan(&created.ID, &created.ExpiresAt, &created.UserID)
 
-	return &created, tokenPGError(fn, err)
+	return &created, tokenError(fn, err)
 }
 
 func (t *tokenPostgres) GetByID(ctx context.Context, id uuid.UUID) (*entity.RefreshToken, error) {
@@ -42,10 +38,10 @@ func (t *tokenPostgres) GetByID(ctx context.Context, id uuid.UUID) (*entity.Refr
 	var token entity.RefreshToken
 	err := t.Pool.QueryRow(ctx, query, id).Scan(&token.ID, &token.ExpiresAt, &token.UserID)
 	if err == pgx.ErrNoRows {
-		return nil, tokenPGError(fn, ErrTokenNotExist)
+		return nil, tokenError(fn, ErrTokenNotExist)
 	}
 
-	return &token, tokenPGError(fn, err)
+	return &token, tokenError(fn, err)
 }
 
 func (t *tokenPostgres) DeleteByID(ctx context.Context, id uuid.UUID) error {
@@ -56,7 +52,7 @@ func (t *tokenPostgres) DeleteByID(ctx context.Context, id uuid.UUID) error {
 
 	_, err := t.Pool.Exec(ctx, query, id)
 
-	return tokenPGError(fn, err)
+	return tokenError(fn, err)
 }
 
 func (t *tokenPostgres) DeleteByUser(ctx context.Context, userID uuid.UUID) error {
@@ -66,5 +62,5 @@ func (t *tokenPostgres) DeleteByUser(ctx context.Context, userID uuid.UUID) erro
 	)
 	_, err := t.Pool.Exec(ctx, query, userID)
 
-	return tokenPGError(fn, err)
+	return tokenError(fn, err)
 }

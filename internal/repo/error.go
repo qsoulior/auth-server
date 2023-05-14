@@ -10,6 +10,14 @@ var (
 	ErrTokenNotExist = errors.New("token does not exist")
 )
 
+func userError(fn string, err error) error {
+	return &Error{"User", fn, err}
+}
+
+func tokenError(fn string, err error) error {
+	return &Error{"Token", fn, err}
+}
+
 type Error struct {
 	Repo string
 	Func string

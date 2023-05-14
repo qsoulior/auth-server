@@ -1,13 +1,7 @@
 package proxy
 
 import (
-	"errors"
-
 	"github.com/qsoulior/auth-server/internal/entity"
-)
-
-var (
-	ErrIDInvalid = errors.New("user id is invalid")
 )
 
 type User interface {

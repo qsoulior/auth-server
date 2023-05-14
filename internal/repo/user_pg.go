@@ -17,10 +17,6 @@ func NewUserPostgres(db *db.Postgres) *userPostgres {
 	return &userPostgres{db}
 }
 
-func userPGError(fn string, err error) error {
-	return &Error{"userPostgres", fn, err}
-}
-
 func (u *userPostgres) Create(ctx context.Context, user entity.User) (*entity.User, error) {
 	const (
 		fn    = "Create"
@@ -30,7 +26,7 @@ func (u *userPostgres) Create(ctx context.Context, user entity.User) (*entity.Us
 	var created entity.User
 	err := u.Pool.QueryRow(ctx, query, user.Name, user.Password).Scan(&created.ID, &created.Name, &created.Password)
 
-	return &created, userPGError(fn, err)
+	return &created, userError(fn, err)
 }
 
 func (u *userPostgres) GetByID(ctx context.Context, id uuid.UUID) (*entity.User, error) {
@@ -42,10 +38,10 @@ func (u *userPostgres) GetByID(ctx context.Context, id uuid.UUID) (*entity.User,
 	var user entity.User
 	err := u.Pool.QueryRow(ctx, query, id).Scan(&user.ID, &user.Name, &user.Password)
 	if err == pgx.ErrNoRows {
-		return nil, userPGError(fn, ErrUserNotExist)
+		return nil, userError(fn, ErrUserNotExist)
 	}
 
-	return &user, userPGError(fn, err)
+	return &user, userError(fn, err)
 }
 
 func (u *userPostgres) GetByName(ctx context.Context, name string) (*entity.User, error) {
@@ -57,10 +53,10 @@ func (u *userPostgres) GetByName(ctx context.Context, name string) (*entity.User
 	var user entity.User
 	err := u.Pool.QueryRow(ctx, query, name).Scan(&user.ID, &user.Name, &user.Password)
 	if err == pgx.ErrNoRows {
-		return nil, userPGError(fn, ErrUserNotExist)
+		return nil, userError(fn, ErrUserNotExist)
 	}
 
-	return &user, userPGError(fn, err)
+	return &user, userError(fn, err)
 }
 
 func (u *userPostgres) UpdatePassword(ctx context.Context, id uuid.UUID, password string) error {
@@ -71,7 +67,7 @@ func (u *userPostgres) UpdatePassword(ctx context.Context, id uuid.UUID, passwor
 
 	_, err := u.Pool.Exec(ctx, query, id, password)
 
-	return userPGError(fn, err)
+	return userError(fn, err)
 }
 
 func (u *userPostgres) DeleteByID(ctx context.Context, id uuid.UUID) error {
@@ -82,5 +78,5 @@ func (u *userPostgres) DeleteByID(ctx context.Context, id uuid.UUID) error {
 
 	_, err := u.Pool.Exec(ctx, query, id)
 
-	return userPGError(fn, err)
+	return userError(fn, err)
 }

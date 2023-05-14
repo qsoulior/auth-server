@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"strings"
 
 	"github.com/qsoulior/auth-server/internal/entity"
@@ -83,65 +83,74 @@ func (u *user) hashPassword(password string) ([]byte, error) {
 }
 
 func (u *user) Create(data entity.User) (*entity.User, error) {
+	const fn = "Create"
+
 	_, err := u.userRepo.GetByName(context.Background(), data.Name)
 	if err == nil {
-		return nil, fmt.Errorf("%w", ErrUserExists)
-	} else if err != repo.ErrUserNotExist {
-		return nil, fmt.Errorf("%w", err)
+		return nil, userError(fn, ErrUserExists)
+	} else if !errors.Is(err, repo.ErrUserNotExist) {
+		return nil, userError(fn, err)
 	}
 
 	if err := validateName(data.Name); err != nil {
-		return nil, fmt.Errorf("%w", err)
+		return nil, userError(fn, err)
 	}
 
 	hash, err := u.hashPassword(data.Password)
 	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+		return nil, userError(fn, err)
 	}
 
 	data.Password = string(hash)
 
 	user, err := u.userRepo.Create(context.Background(), data)
 	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+		return nil, userError(fn, err)
 	}
 
 	return user, nil
 }
 
 func (u *user) Get(id uuid.UUID) (*entity.User, error) {
+	const fn = "Get"
+
 	user, err := u.userRepo.GetByID(context.Background(), id)
 	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+		return nil, userError(fn, err)
 	}
+
 	return user, nil
 }
 
 func (u *user) Delete(id uuid.UUID) error {
+	const fn = "Delete"
+
 	if err := u.userRepo.DeleteByID(context.Background(), id); err != nil {
-		return fmt.Errorf("%w", err)
+		return userError(fn, err)
 	}
 
 	return nil
 }
 
 func (u *user) UpdatePassword(id uuid.UUID, password string) error {
+	const fn = "UpdatePassword"
+
 	user, err := u.userRepo.GetByID(context.Background(), id)
 	if err != nil {
-		return fmt.Errorf("%w", err)
+		return userError(fn, err)
 	}
 
 	hash, err := u.hashPassword(password)
 	if err != nil {
-		return fmt.Errorf("%w", err)
+		return userError(fn, err)
 	}
 
 	if err = u.userRepo.UpdatePassword(context.Background(), user.ID, string(hash)); err != nil {
-		return fmt.Errorf("%w", err)
+		return userError(fn, err)
 	}
 
 	if err = u.tokenRepo.DeleteByUser(context.Background(), user.ID); err != nil {
-		return fmt.Errorf("%w", err)
+		return userError(fn, err)
 	}
 
 	return nil
