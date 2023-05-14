@@ -2,15 +2,12 @@ package repo
 
 import (
 	"context"
-	"errors"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/qsoulior/auth-server/internal/entity"
 	"github.com/qsoulior/auth-server/pkg/db"
 	"github.com/qsoulior/auth-server/pkg/uuid"
 )
-
-var ErrUserNotExist = errors.New("user does not exist")
 
 type UserPostgres struct {
 	*db.Postgres
@@ -20,7 +17,7 @@ func NewUserPostgres(db *db.Postgres) *UserPostgres {
 	return &UserPostgres{db}
 }
 
-func (u *UserPostgres) Create(ctx context.Context, user *entity.User) (*entity.User, error) {
+func (u *UserPostgres) Create(ctx context.Context, user entity.User) (*entity.User, error) {
 	query := `INSERT INTO "user"(name, password) VALUES ($1, $2) RETURNING *`
 	var created entity.User
 	err := u.Pool.QueryRow(ctx, query, user.Name, user.Password).Scan(&created.ID, &created.Name, &created.Password)

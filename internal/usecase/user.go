@@ -2,21 +2,13 @@ package usecase
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/qsoulior/auth-server/internal/entity"
 	"github.com/qsoulior/auth-server/internal/repo"
-	"github.com/qsoulior/auth-server/pkg/jwt"
 	"github.com/qsoulior/auth-server/pkg/uuid"
 	"golang.org/x/crypto/bcrypt"
-)
-
-var (
-	ErrUserExists        = errors.New("user already exists")
-	ErrNameInvalid       = errors.New("name is invalid")
-	ErrPasswordInvalid   = errors.New("password is invalid")
-	ErrPasswordIncorrect = errors.New("password is incorrect")
 )
 
 const (
@@ -68,34 +60,18 @@ func validatePassword(password string) error {
 }
 
 type UserParams struct {
-	Parser   jwt.Parser
 	HashCost int
 }
 
 type user struct {
-	token  Token
-	repo   repo.User
-	parser jwt.Parser
+	userRepo  repo.User
+	tokenRepo repo.Token
 
 	hashCost int
 }
 
-func NewUser(tu Token, repo repo.User, params UserParams) *user {
-	return &user{tu, repo, params.Parser, params.HashCost}
-}
-
-func (u *user) auth(token entity.AccessToken) (uuid.UUID, error) {
-	var id uuid.UUID
-	sub, err := u.parser.Parse(string(token))
-	if err != nil {
-		return id, err
-	}
-
-	id, err = uuid.FromString(sub)
-	if err != nil {
-		return id, errors.New("user id is invalid")
-	}
-	return id, nil
+func NewUser(userRepo repo.User, tokenRepo repo.Token, params UserParams) *user {
+	return &user{userRepo, tokenRepo, params.HashCost}
 }
 
 func (u *user) hashPassword(password string) ([]byte, error) {
@@ -106,61 +82,67 @@ func (u *user) hashPassword(password string) ([]byte, error) {
 	return bcrypt.GenerateFromPassword([]byte(password), u.hashCost)
 }
 
-func (u *user) SignUp(user *entity.User) (*entity.User, error) {
-	_, err := u.repo.GetByName(context.Background(), user.Name)
+func (u *user) Create(data entity.User) (*entity.User, error) {
+	_, err := u.userRepo.GetByName(context.Background(), data.Name)
 	if err == nil {
-		return nil, ErrUserExists
+		return nil, fmt.Errorf("%w", ErrUserExists)
 	} else if err != repo.ErrUserNotExist {
-		return nil, err
+		return nil, fmt.Errorf("%w", err)
 	}
 
-	if err := validateName(user.Name); err != nil {
-		return nil, err
+	if err := validateName(data.Name); err != nil {
+		return nil, fmt.Errorf("%w", err)
 	}
 
-	hash, err := u.hashPassword(user.Password)
+	hash, err := u.hashPassword(data.Password)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w", err)
 	}
 
-	user.Password = string(hash)
-	return u.repo.Create(context.Background(), user)
+	data.Password = string(hash)
+
+	user, err := u.userRepo.Create(context.Background(), data)
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	return user, nil
 }
 
-func (u *user) SignIn(user *entity.User) (entity.AccessToken, *entity.RefreshToken, error) {
-	ex, err := u.repo.GetByName(context.Background(), user.Name)
+func (u *user) Get(id uuid.UUID) (*entity.User, error) {
+	user, err := u.userRepo.GetByID(context.Background(), id)
 	if err != nil {
-		return "", nil, err
+		return nil, fmt.Errorf("%w", err)
 	}
-
-	err = bcrypt.CompareHashAndPassword([]byte(ex.Password), []byte(user.Password))
-	if err != nil {
-		return "", nil, ErrPasswordIncorrect
-	}
-
-	return u.token.Refresh(ex.ID)
+	return user, nil
 }
 
-func (u *user) ChangePassword(password string, newPassword string, accessToken entity.AccessToken) error {
-	id, err := u.auth(accessToken)
-	if err != nil {
-		return err
+func (u *user) Delete(id uuid.UUID) error {
+	if err := u.userRepo.DeleteByID(context.Background(), id); err != nil {
+		return fmt.Errorf("%w", err)
 	}
 
-	user, err := u.repo.GetByID(context.Background(), id)
+	return nil
+}
+
+func (u *user) UpdatePassword(id uuid.UUID, password string) error {
+	user, err := u.userRepo.GetByID(context.Background(), id)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	hash, err := u.hashPassword(password)
 	if err != nil {
-		return ErrPasswordIncorrect
+		return fmt.Errorf("%w", err)
 	}
 
-	hash, err := u.hashPassword(newPassword)
-	if err != nil {
-		return err
+	if err = u.userRepo.UpdatePassword(context.Background(), user.ID, string(hash)); err != nil {
+		return fmt.Errorf("%w", err)
 	}
 
-	return u.repo.UpdatePassword(context.Background(), id, string(hash))
+	if err = u.tokenRepo.DeleteByUser(context.Background(), user.ID); err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	return nil
 }

@@ -2,15 +2,12 @@ package repo
 
 import (
 	"context"
-	"errors"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/qsoulior/auth-server/internal/entity"
 	"github.com/qsoulior/auth-server/pkg/db"
 	"github.com/qsoulior/auth-server/pkg/uuid"
 )
-
-var ErrTokenNotExist = errors.New("token does not exist")
 
 type TokenPostgres struct {
 	*db.Postgres
@@ -20,7 +17,7 @@ func NewTokenPostgres(db *db.Postgres) *TokenPostgres {
 	return &TokenPostgres{db}
 }
 
-func (t *TokenPostgres) Create(ctx context.Context, token *entity.RefreshToken) (*entity.RefreshToken, error) {
+func (t *TokenPostgres) Create(ctx context.Context, token entity.RefreshToken) (*entity.RefreshToken, error) {
 	query := "INSERT INTO token(expires_at, user_id) VALUES ($1, $2) RETURNING *"
 	var created entity.RefreshToken
 	err := t.Pool.QueryRow(ctx, query, token.ExpiresAt, token.UserID).Scan(&created.ID, &created.ExpiresAt, &created.UserID)
