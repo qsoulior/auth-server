@@ -2,15 +2,9 @@ package repo
 
 import (
 	"context"
-	"errors"
 
 	"github.com/qsoulior/auth-server/internal/entity"
 	"github.com/qsoulior/auth-server/pkg/uuid"
-)
-
-var (
-	ErrUserNotExist  = errors.New("user does not exist")
-	ErrTokenNotExist = errors.New("token does not exist")
 )
 
 type User interface {
