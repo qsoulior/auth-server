@@ -10,16 +10,16 @@ var (
 	ErrTokenNotExist = errors.New("token does not exist")
 )
 
-type RepoError struct {
+type Error struct {
 	Repo string
 	Func string
 	Err  error
 }
 
-func (e *RepoError) Error() string {
+func (e *Error) Error() string {
 	return fmt.Sprintf("repo.%s.%s: %s", e.Repo, e.Func, e.Err.Error())
 }
 
-func (e *RepoError) Unwrap() error {
+func (e *Error) Unwrap() error {
 	return e.Err
 }

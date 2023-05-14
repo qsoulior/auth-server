@@ -9,17 +9,19 @@ import (
 	"github.com/qsoulior/auth-server/pkg/uuid"
 )
 
-const tokenPostgres = "TokenPostgres"
-
-type TokenPostgres struct {
+type tokenPostgres struct {
 	*db.Postgres
 }
 
-func NewTokenPostgres(db *db.Postgres) *TokenPostgres {
-	return &TokenPostgres{db}
+func NewTokenPostgres(db *db.Postgres) *tokenPostgres {
+	return &tokenPostgres{db}
 }
 
-func (t *TokenPostgres) Create(ctx context.Context, token entity.RefreshToken) (*entity.RefreshToken, error) {
+func tokenPGError(fn string, err error) error {
+	return &Error{"tokenPostgres", fn, err}
+}
+
+func (t *tokenPostgres) Create(ctx context.Context, token entity.RefreshToken) (*entity.RefreshToken, error) {
 	const (
 		fn    = "Create"
 		query = `INSERT INTO token(expires_at, user_id) VALUES ($1, $2) RETURNING *`
@@ -28,10 +30,10 @@ func (t *TokenPostgres) Create(ctx context.Context, token entity.RefreshToken) (
 	var created entity.RefreshToken
 	err := t.Pool.QueryRow(ctx, query, token.ExpiresAt, token.UserID).Scan(&created.ID, &created.ExpiresAt, &created.UserID)
 
-	return &created, &RepoError{tokenPostgres, fn, err}
+	return &created, tokenPGError(fn, err)
 }
 
-func (t *TokenPostgres) GetByID(ctx context.Context, id uuid.UUID) (*entity.RefreshToken, error) {
+func (t *tokenPostgres) GetByID(ctx context.Context, id uuid.UUID) (*entity.RefreshToken, error) {
 	const (
 		fn    = "GetByID"
 		query = `SELECT * FROM token WHERE id = $1`
@@ -40,13 +42,13 @@ func (t *TokenPostgres) GetByID(ctx context.Context, id uuid.UUID) (*entity.Refr
 	var token entity.RefreshToken
 	err := t.Pool.QueryRow(ctx, query, id).Scan(&token.ID, &token.ExpiresAt, &token.UserID)
 	if err == pgx.ErrNoRows {
-		return nil, &RepoError{tokenPostgres, fn, ErrTokenNotExist}
+		return nil, tokenPGError(fn, ErrTokenNotExist)
 	}
 
-	return &token, &RepoError{tokenPostgres, fn, err}
+	return &token, tokenPGError(fn, err)
 }
 
-func (t *TokenPostgres) DeleteByID(ctx context.Context, id uuid.UUID) error {
+func (t *tokenPostgres) DeleteByID(ctx context.Context, id uuid.UUID) error {
 	const (
 		fn    = "DeleteByID"
 		query = `DELETE FROM token WHERE id = $1`
@@ -54,15 +56,15 @@ func (t *TokenPostgres) DeleteByID(ctx context.Context, id uuid.UUID) error {
 
 	_, err := t.Pool.Exec(ctx, query, id)
 
-	return &RepoError{tokenPostgres, fn, err}
+	return tokenPGError(fn, err)
 }
 
-func (t *TokenPostgres) DeleteByUser(ctx context.Context, userID uuid.UUID) error {
+func (t *tokenPostgres) DeleteByUser(ctx context.Context, userID uuid.UUID) error {
 	const (
 		fn    = "DeleteByUser"
 		query = `DELETE FROM token WHERE user_id = $1`
 	)
 	_, err := t.Pool.Exec(ctx, query, userID)
 
-	return &RepoError{tokenPostgres, fn, err}
+	return tokenPGError(fn, err)
 }
