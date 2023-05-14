@@ -26,7 +26,11 @@ func (t *tokenPostgres) Create(ctx context.Context, token entity.RefreshToken) (
 	var created entity.RefreshToken
 	err := t.Pool.QueryRow(ctx, query, token.ExpiresAt, token.UserID).Scan(&created.ID, &created.ExpiresAt, &created.UserID)
 
-	return &created, tokenError(fn, err)
+	if err != nil {
+		return nil, tokenError(fn, err)
+	}
+
+	return &created, nil
 }
 
 func (t *tokenPostgres) GetByID(ctx context.Context, id uuid.UUID) (*entity.RefreshToken, error) {
@@ -37,11 +41,16 @@ func (t *tokenPostgres) GetByID(ctx context.Context, id uuid.UUID) (*entity.Refr
 
 	var token entity.RefreshToken
 	err := t.Pool.QueryRow(ctx, query, id).Scan(&token.ID, &token.ExpiresAt, &token.UserID)
+
 	if err == pgx.ErrNoRows {
 		return nil, tokenError(fn, ErrTokenNotExist)
 	}
 
-	return &token, tokenError(fn, err)
+	if err != nil {
+		return nil, tokenError(fn, err)
+	}
+
+	return &token, nil
 }
 
 func (t *tokenPostgres) DeleteByID(ctx context.Context, id uuid.UUID) error {
@@ -50,9 +59,11 @@ func (t *tokenPostgres) DeleteByID(ctx context.Context, id uuid.UUID) error {
 		query = `DELETE FROM token WHERE id = $1`
 	)
 
-	_, err := t.Pool.Exec(ctx, query, id)
+	if _, err := t.Pool.Exec(ctx, query, id); err != nil {
+		return tokenError(fn, err)
+	}
 
-	return tokenError(fn, err)
+	return nil
 }
 
 func (t *tokenPostgres) DeleteByUser(ctx context.Context, userID uuid.UUID) error {
@@ -60,7 +71,10 @@ func (t *tokenPostgres) DeleteByUser(ctx context.Context, userID uuid.UUID) erro
 		fn    = "DeleteByUser"
 		query = `DELETE FROM token WHERE user_id = $1`
 	)
-	_, err := t.Pool.Exec(ctx, query, userID)
 
-	return tokenError(fn, err)
+	if _, err := t.Pool.Exec(ctx, query, userID); err != nil {
+		return tokenError(fn, err)
+	}
+
+	return nil
 }

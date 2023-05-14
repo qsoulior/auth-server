@@ -26,7 +26,11 @@ func (u *userPostgres) Create(ctx context.Context, user entity.User) (*entity.Us
 	var created entity.User
 	err := u.Pool.QueryRow(ctx, query, user.Name, user.Password).Scan(&created.ID, &created.Name, &created.Password)
 
-	return &created, userError(fn, err)
+	if err != nil {
+		return nil, userError(fn, err)
+	}
+
+	return &created, nil
 }
 
 func (u *userPostgres) GetByID(ctx context.Context, id uuid.UUID) (*entity.User, error) {
@@ -37,11 +41,16 @@ func (u *userPostgres) GetByID(ctx context.Context, id uuid.UUID) (*entity.User,
 
 	var user entity.User
 	err := u.Pool.QueryRow(ctx, query, id).Scan(&user.ID, &user.Name, &user.Password)
+
 	if err == pgx.ErrNoRows {
 		return nil, userError(fn, ErrUserNotExist)
 	}
 
-	return &user, userError(fn, err)
+	if err != nil {
+		return nil, userError(fn, err)
+	}
+
+	return &user, nil
 }
 
 func (u *userPostgres) GetByName(ctx context.Context, name string) (*entity.User, error) {
@@ -52,11 +61,16 @@ func (u *userPostgres) GetByName(ctx context.Context, name string) (*entity.User
 
 	var user entity.User
 	err := u.Pool.QueryRow(ctx, query, name).Scan(&user.ID, &user.Name, &user.Password)
+
 	if err == pgx.ErrNoRows {
 		return nil, userError(fn, ErrUserNotExist)
 	}
 
-	return &user, userError(fn, err)
+	if err != nil {
+		return nil, userError(fn, err)
+	}
+
+	return &user, nil
 }
 
 func (u *userPostgres) UpdatePassword(ctx context.Context, id uuid.UUID, password string) error {
@@ -65,9 +79,11 @@ func (u *userPostgres) UpdatePassword(ctx context.Context, id uuid.UUID, passwor
 		query = `UPDATE "user" SET password = $2 WHERE id = $1`
 	)
 
-	_, err := u.Pool.Exec(ctx, query, id, password)
+	if _, err := u.Pool.Exec(ctx, query, id, password); err != nil {
+		return userError(fn, err)
+	}
 
-	return userError(fn, err)
+	return nil
 }
 
 func (u *userPostgres) DeleteByID(ctx context.Context, id uuid.UUID) error {
@@ -76,7 +92,9 @@ func (u *userPostgres) DeleteByID(ctx context.Context, id uuid.UUID) error {
 		query = `DELETE FROM "user" WHERE id = $1`
 	)
 
-	_, err := u.Pool.Exec(ctx, query, id)
+	if _, err := u.Pool.Exec(ctx, query, id); err != nil {
+		return userError(fn, err)
+	}
 
-	return userError(fn, err)
+	return nil
 }
