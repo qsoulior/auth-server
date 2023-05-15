@@ -15,8 +15,8 @@ func NewServer(cfg *Config, logger log.Logger, user proxy.User, token usecase.To
 
 	mux := http.NewServeMux()
 	mux.Handle("/", controller.Index())
-	v1.HandleUser(user, mux)
-	v1.HandleToken(token, mux)
+	v1.HandleUser(user, mux, logger)
+	v1.HandleToken(token, mux, logger)
 
 	handler := controller.LoggerMiddleware(controller.ContentTypeMiddleware(mux, "application/json"), logger)
 

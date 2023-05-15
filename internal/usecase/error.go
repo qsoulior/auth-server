@@ -14,18 +14,16 @@ var (
 	ErrTokenExpired      = errors.New("token is expired")
 )
 
-func userError(fn string, err error) error {
-	return &Error{"User", fn, err}
-}
-
-func tokenError(fn string, err error) error {
-	return &Error{"Token", fn, err}
-}
+var (
+	userError  = fnError("User")
+	tokenError = fnError("Token")
+)
 
 type Error struct {
-	UseCase string
-	Func    string
-	Err     error
+	UseCase  string
+	Func     string
+	Err      error
+	External bool
 }
 
 func (e *Error) Error() string {
@@ -34,4 +32,12 @@ func (e *Error) Error() string {
 
 func (e *Error) Unwrap() error {
 	return e.Err
+}
+
+type errorFunc func(fn string, err error, external bool) error
+
+func fnError(usecase string) errorFunc {
+	return func(fn string, err error, external bool) error {
+		return &Error{usecase, fn, err, external}
+	}
 }

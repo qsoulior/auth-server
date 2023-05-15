@@ -79,7 +79,12 @@ func (u *user) hashPassword(password string) ([]byte, error) {
 		return nil, err
 	}
 
-	return bcrypt.GenerateFromPassword([]byte(password), u.hashCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), u.hashCost)
+	if err != nil {
+		return nil, ErrPasswordInvalid
+	}
+
+	return hash, nil
 }
 
 func (u *user) Create(data entity.User) (*entity.User, error) {
@@ -87,25 +92,25 @@ func (u *user) Create(data entity.User) (*entity.User, error) {
 
 	_, err := u.userRepo.GetByName(context.Background(), data.Name)
 	if err == nil {
-		return nil, userError(fn, ErrUserExists)
+		return nil, userError(fn, ErrUserExists, true)
 	} else if !errors.Is(err, repo.ErrUserNotExist) {
-		return nil, userError(fn, err)
+		return nil, userError(fn, err, false)
 	}
 
 	if err := validateName(data.Name); err != nil {
-		return nil, userError(fn, err)
+		return nil, userError(fn, err, true)
 	}
 
 	hash, err := u.hashPassword(data.Password)
 	if err != nil {
-		return nil, userError(fn, err)
+		return nil, userError(fn, err, true)
 	}
 
 	data.Password = string(hash)
 
 	user, err := u.userRepo.Create(context.Background(), data)
 	if err != nil {
-		return nil, userError(fn, err)
+		return nil, userError(fn, err, false)
 	}
 
 	return user, nil
@@ -116,7 +121,10 @@ func (u *user) Get(id uuid.UUID) (*entity.User, error) {
 
 	user, err := u.userRepo.GetByID(context.Background(), id)
 	if err != nil {
-		return nil, userError(fn, err)
+		if errors.Is(err, repo.ErrUserNotExist) {
+			return nil, userError(fn, err, true)
+		}
+		return nil, userError(fn, err, false)
 	}
 
 	return user, nil
@@ -126,7 +134,7 @@ func (u *user) Delete(id uuid.UUID) error {
 	const fn = "Delete"
 
 	if err := u.userRepo.DeleteByID(context.Background(), id); err != nil {
-		return userError(fn, err)
+		return userError(fn, err, false)
 	}
 
 	return nil
@@ -137,20 +145,23 @@ func (u *user) UpdatePassword(id uuid.UUID, password string) error {
 
 	user, err := u.userRepo.GetByID(context.Background(), id)
 	if err != nil {
-		return userError(fn, err)
+		if errors.Is(err, repo.ErrUserNotExist) {
+			return userError(fn, err, true)
+		}
+		return userError(fn, err, false)
 	}
 
 	hash, err := u.hashPassword(password)
 	if err != nil {
-		return userError(fn, err)
+		return userError(fn, err, true)
 	}
 
 	if err = u.userRepo.UpdatePassword(context.Background(), user.ID, string(hash)); err != nil {
-		return userError(fn, err)
+		return userError(fn, err, false)
 	}
 
 	if err = u.tokenRepo.DeleteByUser(context.Background(), user.ID); err != nil {
-		return userError(fn, err)
+		return userError(fn, err, false)
 	}
 
 	return nil

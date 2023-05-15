@@ -2,18 +2,22 @@ package v1
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	controller "github.com/qsoulior/auth-server/internal/controller/http"
+	"github.com/qsoulior/auth-server/internal/usecase"
 	"github.com/qsoulior/auth-server/internal/usecase/proxy"
+	"github.com/qsoulior/auth-server/pkg/log"
 )
 
 type user struct {
 	usecase proxy.User
+	logger  log.Logger
 }
 
-func HandleUser(usecase proxy.User, mux *http.ServeMux) {
-	user := &user{usecase}
+func HandleUser(usecase proxy.User, mux *http.ServeMux, logger log.Logger) {
+	user := &user{usecase, logger}
 	mux.Handle(api+"/user/", http.StripPrefix(api+"/user", user))
 }
 
@@ -50,7 +54,13 @@ func (u *user) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	_, err = u.usecase.Create(user)
 	if err != nil {
-		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
+		var e *usecase.Error
+		if errors.As(err, &e) && e.External {
+			controller.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
+			return
+		}
+		controller.InternalServerError(w)
+		u.logger.Error("%s", err)
 		return
 	}
 
@@ -71,13 +81,19 @@ func (u *user) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	d := json.NewDecoder(r.Body)
 	err = d.Decode(&body)
 	if err != nil {
-		controller.ErrorJSON(w, "decoding error"+err.Error(), http.StatusBadRequest)
+		controller.ErrorJSON(w, "decoding error "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	err = u.usecase.UpdatePassword(body.NewPassword, body.CurrentPassword, token)
 	if err != nil {
-		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
+		var e *usecase.Error
+		if errors.As(err, &e) && e.External {
+			controller.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
+			return
+		}
+		controller.InternalServerError(w)
+		u.logger.Error("%s", err)
 		return
 	}
 

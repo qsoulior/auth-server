@@ -1,18 +1,21 @@
 package v1
 
 import (
+	"errors"
 	"net/http"
 
 	controller "github.com/qsoulior/auth-server/internal/controller/http"
 	"github.com/qsoulior/auth-server/internal/usecase"
+	"github.com/qsoulior/auth-server/pkg/log"
 )
 
 type token struct {
 	usecase usecase.Token
+	logger  log.Logger
 }
 
-func HandleToken(usecase usecase.Token, mux *http.ServeMux) {
-	token := &token{usecase}
+func HandleToken(usecase usecase.Token, mux *http.ServeMux, logger log.Logger) {
+	token := &token{usecase, logger}
 	mux.Handle(api+"/token/", http.StripPrefix(api+"/token", token))
 }
 
@@ -56,7 +59,13 @@ func (t *token) Authorize(w http.ResponseWriter, r *http.Request) {
 
 	accessToken, refreshToken, err := t.usecase.Authorize(user)
 	if err != nil {
-		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
+		var e *usecase.Error
+		if errors.As(err, &e) && e.External {
+			controller.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
+			return
+		}
+		controller.InternalServerError(w)
+		t.logger.Error("%s", err)
 		return
 	}
 
@@ -72,10 +81,16 @@ func (t *token) Refresh(w http.ResponseWriter, r *http.Request) {
 
 	accessToken, refreshToken, err := t.usecase.Refresh(token)
 	if err != nil {
-		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
-		if err == usecase.ErrTokenExpired {
-			deleteToken(w)
+		var e *usecase.Error
+		if errors.As(err, &e) && e.External {
+			if errors.Is(e.Err, usecase.ErrTokenExpired) {
+				deleteToken(w)
+			}
+			controller.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
+			return
 		}
+		controller.InternalServerError(w)
+		t.logger.Error("%s", err)
 		return
 	}
 
@@ -85,18 +100,25 @@ func (t *token) Refresh(w http.ResponseWriter, r *http.Request) {
 func (t *token) Revoke(w http.ResponseWriter, r *http.Request) {
 	token, err := readToken(r)
 	if err != nil {
-		if err == usecase.ErrTokenExpired {
-			deleteToken(w)
-		}
 		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	err = t.usecase.Revoke(token)
 	if err != nil {
-		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
+		var e *usecase.Error
+		if errors.As(err, &e) && e.External {
+			if errors.Is(e.Err, usecase.ErrTokenExpired) {
+				deleteToken(w)
+			}
+			controller.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
+			return
+		}
+		controller.InternalServerError(w)
+		t.logger.Error("%s", err)
 		return
 	}
+
 	deleteToken(w)
 	writeSuccess(w)
 }
@@ -110,9 +132,19 @@ func (t *token) RevokeAll(w http.ResponseWriter, r *http.Request) {
 
 	err = t.usecase.RevokeAll(token)
 	if err != nil {
-		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
+		var e *usecase.Error
+		if errors.As(err, &e) && e.External {
+			if errors.Is(e.Err, usecase.ErrTokenExpired) {
+				deleteToken(w)
+			}
+			controller.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
+			return
+		}
+		controller.InternalServerError(w)
+		t.logger.Error("%s", err)
 		return
 	}
+
 	deleteToken(w)
 	writeSuccess(w)
 }

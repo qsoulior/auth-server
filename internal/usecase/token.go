@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/qsoulior/auth-server/internal/entity"
@@ -65,16 +66,19 @@ func (t *token) Authorize(data entity.User) (entity.AccessToken, *entity.Refresh
 
 	user, err := t.userRepo.GetByName(context.Background(), data.Name)
 	if err != nil {
-		return "", nil, tokenError(fn, err)
+		if errors.Is(err, repo.ErrUserNotExist) {
+			return "", nil, tokenError(fn, err, true)
+		}
+		return "", nil, tokenError(fn, err, false)
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(data.Password)); err != nil {
-		return "", nil, tokenError(fn, ErrPasswordIncorrect)
+		return "", nil, tokenError(fn, ErrPasswordIncorrect, true)
 	}
 
 	accessToken, refreshToken, err := t.create(user.ID)
 	if err != nil {
-		return "", nil, tokenError(fn, err)
+		return "", nil, tokenError(fn, err, false)
 	}
 
 	return accessToken, refreshToken, nil
@@ -85,16 +89,16 @@ func (t *token) Refresh(id uuid.UUID) (entity.AccessToken, *entity.RefreshToken,
 
 	token, err := t.getByID(id)
 	if err != nil {
-		return "", nil, tokenError(fn, err)
+		return "", nil, tokenError(fn, err, true)
 	}
 
 	if err := t.tokenRepo.DeleteByID(context.Background(), token.ID); err != nil {
-		return "", nil, tokenError(fn, err)
+		return "", nil, tokenError(fn, err, false)
 	}
 
 	accessToken, refreshToken, err := t.create(token.UserID)
 	if err != nil {
-		return "", nil, tokenError(fn, err)
+		return "", nil, tokenError(fn, err, false)
 	}
 
 	return accessToken, refreshToken, nil
@@ -105,11 +109,11 @@ func (t *token) Revoke(id uuid.UUID) error {
 
 	token, err := t.getByID(id)
 	if err != nil {
-		return tokenError(fn, err)
+		return tokenError(fn, err, true)
 	}
 
 	if err = t.tokenRepo.DeleteByID(context.Background(), token.ID); err != nil {
-		return tokenError(fn, err)
+		return tokenError(fn, err, false)
 	}
 
 	return nil
@@ -120,11 +124,11 @@ func (t *token) RevokeAll(id uuid.UUID) error {
 
 	token, err := t.getByID(id)
 	if err != nil {
-		return tokenError(fn, err)
+		return tokenError(fn, err, true)
 	}
 
 	if err = t.tokenRepo.DeleteByUser(context.Background(), token.UserID); err != nil {
-		return tokenError(fn, err)
+		return tokenError(fn, err, false)
 	}
 
 	return nil

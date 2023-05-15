@@ -28,3 +28,7 @@ func UnsupportedMediaType(w http.ResponseWriter, r *http.Request, contentType st
 func NotFound(w http.ResponseWriter, r *http.Request) {
 	ErrorJSON(w, "page not found", http.StatusNotFound)
 }
+
+func InternalServerError(w http.ResponseWriter) {
+	ErrorJSON(w, "internal server error", http.StatusInternalServerError)
+}
