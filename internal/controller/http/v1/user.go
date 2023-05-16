@@ -2,7 +2,6 @@ package v1
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 
 	controller "github.com/qsoulior/auth-server/internal/controller/http"
@@ -54,13 +53,9 @@ func (u *user) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	_, err = u.usecase.Create(user)
 	if err != nil {
-		var e *usecase.Error
-		if errors.As(err, &e) && e.External {
+		controller.HandleError(w, err, u.logger, func(e *usecase.Error) {
 			controller.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
-			return
-		}
-		controller.InternalServerError(w)
-		u.logger.Error("%s", err)
+		})
 		return
 	}
 
@@ -87,14 +82,9 @@ func (u *user) ChangePassword(w http.ResponseWriter, r *http.Request) {
 
 	err = u.usecase.UpdatePassword(body.NewPassword, body.CurrentPassword, token)
 	if err != nil {
-		var e *usecase.Error
-		if errors.As(err, &e) && e.External {
+		controller.HandleError(w, err, u.logger, func(e *usecase.Error) {
 			controller.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
-			return
-		}
-		controller.InternalServerError(w)
-		u.logger.Error("%s", err)
-		return
+		})
 	}
 
 	writeSuccess(w)

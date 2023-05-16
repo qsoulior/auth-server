@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"errors"
 	"net/http"
 
 	controller "github.com/qsoulior/auth-server/internal/controller/http"
@@ -59,13 +58,9 @@ func (t *token) Authorize(w http.ResponseWriter, r *http.Request) {
 
 	accessToken, refreshToken, err := t.usecase.Authorize(user)
 	if err != nil {
-		var e *usecase.Error
-		if errors.As(err, &e) && e.External {
+		controller.HandleError(w, err, t.logger, func(e *usecase.Error) {
 			controller.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
-			return
-		}
-		controller.InternalServerError(w)
-		t.logger.Error("%s", err)
+		})
 		return
 	}
 
@@ -81,16 +76,12 @@ func (t *token) Refresh(w http.ResponseWriter, r *http.Request) {
 
 	accessToken, refreshToken, err := t.usecase.Refresh(token)
 	if err != nil {
-		var e *usecase.Error
-		if errors.As(err, &e) && e.External {
+		controller.HandleError(w, err, t.logger, func(e *usecase.Error) {
 			if e.Err == usecase.ErrTokenExpired {
 				deleteToken(w)
 			}
 			controller.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
-			return
-		}
-		controller.InternalServerError(w)
-		t.logger.Error("%s", err)
+		})
 		return
 	}
 
@@ -106,16 +97,12 @@ func (t *token) Revoke(w http.ResponseWriter, r *http.Request) {
 
 	err = t.usecase.Revoke(token)
 	if err != nil {
-		var e *usecase.Error
-		if errors.As(err, &e) && e.External {
+		controller.HandleError(w, err, t.logger, func(e *usecase.Error) {
 			if e.Err == usecase.ErrTokenExpired {
 				deleteToken(w)
 			}
 			controller.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
-			return
-		}
-		controller.InternalServerError(w)
-		t.logger.Error("%s", err)
+		})
 		return
 	}
 
@@ -132,16 +119,12 @@ func (t *token) RevokeAll(w http.ResponseWriter, r *http.Request) {
 
 	err = t.usecase.RevokeAll(token)
 	if err != nil {
-		var e *usecase.Error
-		if errors.As(err, &e) && e.External {
+		controller.HandleError(w, err, t.logger, func(e *usecase.Error) {
 			if e.Err == usecase.ErrTokenExpired {
 				deleteToken(w)
 			}
 			controller.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
-			return
-		}
-		controller.InternalServerError(w)
-		t.logger.Error("%s", err)
+		})
 		return
 	}
 

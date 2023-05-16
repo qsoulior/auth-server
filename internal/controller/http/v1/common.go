@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/qsoulior/auth-server/internal/entity"
-	"github.com/qsoulior/auth-server/internal/usecase"
 	"github.com/qsoulior/auth-server/pkg/uuid"
 )
 
@@ -85,12 +84,4 @@ func deleteToken(w http.ResponseWriter) {
 	}
 
 	http.SetCookie(w, cookie)
-}
-
-func handleError(err error) (error, bool) {
-	var e *usecase.Error
-	if errors.As(err, &e) && e.External {
-		return e, true
-	}
-	return err, false
 }
