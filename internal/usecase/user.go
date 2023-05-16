@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	"github.com/qsoulior/auth-server/internal/entity"
@@ -93,7 +92,7 @@ func (u *user) Create(data entity.User) (*entity.User, error) {
 	_, err := u.userRepo.GetByName(context.Background(), data.Name)
 	if err == nil {
 		return nil, userError(fn, ErrUserExists, true)
-	} else if !errors.Is(err, repo.ErrUserNotExist) {
+	} else if err != repo.ErrUserNotExist {
 		return nil, userError(fn, err, false)
 	}
 
@@ -121,7 +120,7 @@ func (u *user) Get(id uuid.UUID) (*entity.User, error) {
 
 	user, err := u.userRepo.GetByID(context.Background(), id)
 	if err != nil {
-		if errors.Is(err, repo.ErrUserNotExist) {
+		if err == repo.ErrUserNotExist {
 			return nil, userError(fn, err, true)
 		}
 		return nil, userError(fn, err, false)
@@ -145,7 +144,7 @@ func (u *user) UpdatePassword(id uuid.UUID, password string) error {
 
 	user, err := u.userRepo.GetByID(context.Background(), id)
 	if err != nil {
-		if errors.Is(err, repo.ErrUserNotExist) {
+		if err == repo.ErrUserNotExist {
 			return userError(fn, err, true)
 		}
 		return userError(fn, err, false)

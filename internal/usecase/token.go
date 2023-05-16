@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/qsoulior/auth-server/internal/entity"
@@ -66,7 +65,7 @@ func (t *token) Authorize(data entity.User) (entity.AccessToken, *entity.Refresh
 
 	user, err := t.userRepo.GetByName(context.Background(), data.Name)
 	if err != nil {
-		if errors.Is(err, repo.ErrUserNotExist) {
+		if err == repo.ErrUserNotExist {
 			return "", nil, tokenError(fn, err, true)
 		}
 		return "", nil, tokenError(fn, err, false)

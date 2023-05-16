@@ -83,7 +83,7 @@ func (t *token) Refresh(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		var e *usecase.Error
 		if errors.As(err, &e) && e.External {
-			if errors.Is(e.Err, usecase.ErrTokenExpired) {
+			if e.Err == usecase.ErrTokenExpired {
 				deleteToken(w)
 			}
 			controller.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
@@ -108,7 +108,7 @@ func (t *token) Revoke(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		var e *usecase.Error
 		if errors.As(err, &e) && e.External {
-			if errors.Is(e.Err, usecase.ErrTokenExpired) {
+			if e.Err == usecase.ErrTokenExpired {
 				deleteToken(w)
 			}
 			controller.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
@@ -134,7 +134,7 @@ func (t *token) RevokeAll(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		var e *usecase.Error
 		if errors.As(err, &e) && e.External {
-			if errors.Is(e.Err, usecase.ErrTokenExpired) {
+			if e.Err == usecase.ErrTokenExpired {
 				deleteToken(w)
 			}
 			controller.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
