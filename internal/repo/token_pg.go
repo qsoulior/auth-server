@@ -53,6 +53,25 @@ func (t *tokenPostgres) GetByID(ctx context.Context, id uuid.UUID) (*entity.Refr
 	return &token, nil
 }
 
+func (t *tokenPostgres) GetByUser(ctx context.Context, userID uuid.UUID) ([]*entity.RefreshToken, error) {
+	const (
+		fn    = "GetByUser"
+		query = `SELECT * FROM token WHERE user_id = $1 ORDER BY expires_at`
+	)
+
+	rows, err := t.Pool.Query(ctx, query, userID)
+	if err != nil {
+		return nil, tokenError(fn, err)
+	}
+
+	tokens, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByPos[entity.RefreshToken])
+	if err != nil {
+		return nil, tokenError(fn, err)
+	}
+
+	return tokens, nil
+}
+
 func (t *tokenPostgres) DeleteByID(ctx context.Context, id uuid.UUID) error {
 	const (
 		fn    = "DeleteByID"

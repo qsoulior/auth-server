@@ -15,6 +15,7 @@ import (
 type TokenParams struct {
 	AccessAge  int
 	RefreshAge int
+	RefreshCap int
 }
 
 type token struct {
@@ -24,10 +25,11 @@ type token struct {
 
 	accessAge  int
 	refreshAge int
+	refreshCap int
 }
 
 func NewToken(userRepo repo.User, tokenRepo repo.Token, builder jwt.Builder, params TokenParams) *token {
-	return &token{userRepo, tokenRepo, builder, params.AccessAge, params.RefreshAge}
+	return &token{userRepo, tokenRepo, builder, params.AccessAge, params.RefreshAge, params.RefreshCap}
 }
 
 func (t *token) getByID(id uuid.UUID) (*entity.RefreshToken, error) {
@@ -74,6 +76,17 @@ func (t *token) Authorize(data entity.User) (entity.AccessToken, *entity.Refresh
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(data.Password)); err != nil {
 		return "", nil, tokenError(fn, ErrPasswordIncorrect, true)
+	}
+
+	tokens, err := t.tokenRepo.GetByUser(context.Background(), user.ID)
+	if err != nil {
+		return "", nil, tokenError(fn, err, false)
+	}
+
+	if len(tokens) >= t.refreshCap {
+		if err := t.tokenRepo.DeleteByID(context.Background(), tokens[0].ID); err != nil {
+			return "", nil, tokenError(fn, err, false)
+		}
 	}
 
 	accessToken, refreshToken, err := t.create(user.ID)

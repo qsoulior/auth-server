@@ -36,7 +36,7 @@ func Run(cfg *Config, logger log.Logger) error {
 	userProxy := proxy.NewUser(userUseCase, parser)
 	logger.Info("user proxy created")
 
-	tokenUseCase := usecase.NewToken(userRepo, tokenRepo, builder, usecase.TokenParams{cfg.JWT.Age, cfg.RT.Age})
+	tokenUseCase := usecase.NewToken(userRepo, tokenRepo, builder, usecase.TokenParams{cfg.JWT.Age, cfg.RT.Age, cfg.RT.Cap})
 	logger.Info("token usecase created")
 
 	// server listening

@@ -39,6 +39,7 @@ type (
 	}
 
 	RTConfig struct {
+		Cap int `env:"RT_CAP" default:"10"`
 		Age int `env:"RT_AGE" default:"30"`
 	}
 
