@@ -13,8 +13,8 @@ type User interface {
 }
 
 type Token interface {
-	Authorize(data entity.User) (entity.AccessToken, *entity.RefreshToken, error)
-	Refresh(id uuid.UUID) (entity.AccessToken, *entity.RefreshToken, error)
-	Revoke(id uuid.UUID) error
-	RevokeAll(id uuid.UUID) error
+	Authorize(data entity.User, fingerprint []byte) (entity.AccessToken, *entity.RefreshToken, error)
+	Refresh(id uuid.UUID, fingerprint []byte) (entity.AccessToken, *entity.RefreshToken, error)
+	Revoke(id uuid.UUID, fingerprint []byte) error
+	RevokeAll(id uuid.UUID, fingerprint []byte) error
 }

@@ -3,6 +3,7 @@ package v1
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -47,6 +48,10 @@ func readToken(r *http.Request) (uuid.UUID, error) {
 	}
 
 	return uuid.FromString(data)
+}
+
+func readFingerprint(r *http.Request) []byte {
+	return []byte(fmt.Sprintf("%s : %s : %s : %s", r.Header.Get("Sec-CH-UA"), r.Header.Get("User-Agent"), r.Header.Get("Accept-Language"), r.Header.Get("Upgrade-Insecure-Requests")))
 }
 
 func writeSuccess(w http.ResponseWriter) {

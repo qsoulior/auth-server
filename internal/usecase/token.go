@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"time"
 
@@ -44,10 +46,38 @@ func (t *token) getByID(id uuid.UUID) (*entity.RefreshToken, error) {
 	return token, nil
 }
 
-func (t *token) create(userID uuid.UUID) (entity.AccessToken, *entity.RefreshToken, error) {
+func (t *token) hashFingerprint(userID uuid.UUID, fingerprint []byte) ([]byte, error) {
+	h := sha256.New()
+	_, err := h.Write(append(fingerprint, userID[:]...))
+	if err != nil {
+		return nil, ErrFingerprintInvalid
+	}
+
+	return h.Sum(nil), nil
+}
+
+func (t *token) verifyFingerprint(token *entity.RefreshToken, fingerprint []byte) error {
+	fp, err := t.hashFingerprint(token.UserID, fingerprint)
+	if err != nil {
+		return err
+	}
+
+	if hex.EncodeToString(fp) != token.Fingerprint {
+		return ErrFingerprintIncorrect
+	}
+	return nil
+}
+
+func (t *token) create(userID uuid.UUID, fingerprint []byte) (entity.AccessToken, *entity.RefreshToken, error) {
+	fp, err := t.hashFingerprint(userID, fingerprint)
+	if err != nil {
+		return "", nil, err
+	}
+
 	data := entity.RefreshToken{
-		ExpiresAt: time.Now().AddDate(0, 0, t.refreshAge),
-		UserID:    userID,
+		ExpiresAt:   time.Now().AddDate(0, 0, t.refreshAge),
+		Fingerprint: hex.EncodeToString(fp),
+		UserID:      userID,
 	}
 
 	refreshToken, err := t.tokenRepo.Create(context.Background(), data)
@@ -63,7 +93,7 @@ func (t *token) create(userID uuid.UUID) (entity.AccessToken, *entity.RefreshTok
 	return entity.AccessToken(accessToken), refreshToken, nil
 }
 
-func (t *token) Authorize(data entity.User) (entity.AccessToken, *entity.RefreshToken, error) {
+func (t *token) Authorize(data entity.User, fingerprint []byte) (entity.AccessToken, *entity.RefreshToken, error) {
 	const fn = "Authorize"
 
 	user, err := t.userRepo.GetByName(context.Background(), data.Name)
@@ -89,7 +119,7 @@ func (t *token) Authorize(data entity.User) (entity.AccessToken, *entity.Refresh
 		}
 	}
 
-	accessToken, refreshToken, err := t.create(user.ID)
+	accessToken, refreshToken, err := t.create(user.ID, fingerprint)
 	if err != nil {
 		return "", nil, tokenError(fn, err, false)
 	}
@@ -97,7 +127,7 @@ func (t *token) Authorize(data entity.User) (entity.AccessToken, *entity.Refresh
 	return accessToken, refreshToken, nil
 }
 
-func (t *token) Refresh(id uuid.UUID) (entity.AccessToken, *entity.RefreshToken, error) {
+func (t *token) Refresh(id uuid.UUID, fingerprint []byte) (entity.AccessToken, *entity.RefreshToken, error) {
 	const fn = "Refresh"
 
 	token, err := t.getByID(id)
@@ -105,11 +135,15 @@ func (t *token) Refresh(id uuid.UUID) (entity.AccessToken, *entity.RefreshToken,
 		return "", nil, tokenError(fn, err, true)
 	}
 
+	if err := t.verifyFingerprint(token, fingerprint); err != nil {
+		return "", nil, tokenError(fn, err, true)
+	}
+
 	if err := t.tokenRepo.DeleteByID(context.Background(), token.ID); err != nil {
 		return "", nil, tokenError(fn, err, false)
 	}
 
-	accessToken, refreshToken, err := t.create(token.UserID)
+	accessToken, refreshToken, err := t.create(token.UserID, fingerprint)
 	if err != nil {
 		return "", nil, tokenError(fn, err, false)
 	}
@@ -117,11 +151,15 @@ func (t *token) Refresh(id uuid.UUID) (entity.AccessToken, *entity.RefreshToken,
 	return accessToken, refreshToken, nil
 }
 
-func (t *token) Revoke(id uuid.UUID) error {
+func (t *token) Revoke(id uuid.UUID, fingerprint []byte) error {
 	const fn = "Revoke"
 
 	token, err := t.getByID(id)
 	if err != nil {
+		return tokenError(fn, err, true)
+	}
+
+	if err := t.verifyFingerprint(token, fingerprint); err != nil {
 		return tokenError(fn, err, true)
 	}
 
@@ -132,11 +170,15 @@ func (t *token) Revoke(id uuid.UUID) error {
 	return nil
 }
 
-func (t *token) RevokeAll(id uuid.UUID) error {
+func (t *token) RevokeAll(id uuid.UUID, fingerprint []byte) error {
 	const fn = "RevokeAll"
 
 	token, err := t.getByID(id)
 	if err != nil {
+		return tokenError(fn, err, true)
+	}
+
+	if err := t.verifyFingerprint(token, fingerprint); err != nil {
 		return tokenError(fn, err, true)
 	}
 

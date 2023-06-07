@@ -55,8 +55,9 @@ func (t *token) Authorize(w http.ResponseWriter, r *http.Request) {
 		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	fingerprint := readFingerprint(r)
 
-	accessToken, refreshToken, err := t.usecase.Authorize(user)
+	accessToken, refreshToken, err := t.usecase.Authorize(user, fingerprint)
 	if err != nil {
 		controller.HandleError(w, err, t.logger, func(e *usecase.Error) {
 			controller.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
@@ -73,8 +74,9 @@ func (t *token) Refresh(w http.ResponseWriter, r *http.Request) {
 		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	fingerprint := readFingerprint(r)
 
-	accessToken, refreshToken, err := t.usecase.Refresh(token)
+	accessToken, refreshToken, err := t.usecase.Refresh(token, fingerprint)
 	if err != nil {
 		controller.HandleError(w, err, t.logger, func(e *usecase.Error) {
 			if e.Err == usecase.ErrTokenExpired {
@@ -94,8 +96,9 @@ func (t *token) Revoke(w http.ResponseWriter, r *http.Request) {
 		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	fingerprint := readFingerprint(r)
 
-	err = t.usecase.Revoke(token)
+	err = t.usecase.Revoke(token, fingerprint)
 	if err != nil {
 		controller.HandleError(w, err, t.logger, func(e *usecase.Error) {
 			if e.Err == usecase.ErrTokenExpired {
@@ -116,8 +119,9 @@ func (t *token) RevokeAll(w http.ResponseWriter, r *http.Request) {
 		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	fingerprint := readFingerprint(r)
 
-	err = t.usecase.RevokeAll(token)
+	err = t.usecase.RevokeAll(token, fingerprint)
 	if err != nil {
 		controller.HandleError(w, err, t.logger, func(e *usecase.Error) {
 			if e.Err == usecase.ErrTokenExpired {

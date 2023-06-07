@@ -20,11 +20,11 @@ func NewTokenPostgres(db *db.Postgres) *tokenPostgres {
 func (t *tokenPostgres) Create(ctx context.Context, token entity.RefreshToken) (*entity.RefreshToken, error) {
 	const (
 		fn    = "Create"
-		query = `INSERT INTO token(expires_at, user_id) VALUES ($1, $2) RETURNING *`
+		query = `INSERT INTO token(expires_at, fingerprint, user_id) VALUES ($1, $2, $3) RETURNING *`
 	)
 
 	var created entity.RefreshToken
-	err := t.Pool.QueryRow(ctx, query, token.ExpiresAt, token.UserID).Scan(&created.ID, &created.ExpiresAt, &created.UserID)
+	err := t.Pool.QueryRow(ctx, query, token.ExpiresAt, token.Fingerprint, token.UserID).Scan(&created.ID, &created.ExpiresAt, &created.Fingerprint, &created.UserID)
 
 	if err != nil {
 		return nil, tokenError(fn, err)
@@ -40,7 +40,7 @@ func (t *tokenPostgres) GetByID(ctx context.Context, id uuid.UUID) (*entity.Refr
 	)
 
 	var token entity.RefreshToken
-	err := t.Pool.QueryRow(ctx, query, id).Scan(&token.ID, &token.ExpiresAt, &token.UserID)
+	err := t.Pool.QueryRow(ctx, query, id).Scan(&token.ID, &token.ExpiresAt, &token.Fingerprint, &token.UserID)
 
 	if err == pgx.ErrNoRows {
 		return nil, tokenError(fn, ErrTokenNotExist)

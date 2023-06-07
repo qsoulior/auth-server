@@ -7,9 +7,10 @@ import (
 )
 
 type RefreshToken struct {
-	ID        uuid.UUID `json:"id"`
-	ExpiresAt time.Time `json:"expires_at"`
-	UserID    uuid.UUID `json:"-"`
+	ID          uuid.UUID `json:"id"`
+	ExpiresAt   time.Time `json:"expires_at"`
+	Fingerprint string    `json:"fingerprint"`
+	UserID      uuid.UUID `json:"-"`
 }
 
 type AccessToken string
