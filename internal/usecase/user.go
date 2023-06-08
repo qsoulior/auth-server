@@ -32,14 +32,14 @@ func validateName(name string) error {
 	return nil
 }
 
-func validatePassword(password string) error {
+func validatePassword(password []byte) error {
 	if length := len(password); length < 8 || length > 72 {
 		return ErrPasswordInvalid
 	}
 
 	var lower, upper, digit, special bool
 
-	for _, r := range password {
+	for _, r := range string(password) {
 		switch {
 		case strings.ContainsRune(lowerChars, r):
 			lower = true
@@ -74,12 +74,12 @@ func NewUser(userRepo repo.User, tokenRepo repo.Token, params UserParams) *user 
 	return &user{userRepo, tokenRepo, params.HashCost}
 }
 
-func (u *user) hashPassword(password string) ([]byte, error) {
+func (u *user) hashPassword(password []byte) ([]byte, error) {
 	if err := validatePassword(password); err != nil {
 		return nil, err
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), u.hashCost)
+	hash, err := bcrypt.GenerateFromPassword(password, u.hashCost)
 	if err != nil {
 		return nil, ErrPasswordInvalid
 	}
@@ -92,25 +92,25 @@ func (u *user) Create(data entity.User) (*entity.User, error) {
 
 	_, err := u.userRepo.GetByName(context.Background(), data.Name)
 	if err == nil {
-		return nil, userError(fn, ErrUserExists, true)
+		return nil, UserError(fn, ErrUserExists, true)
 	} else if !errors.Is(err, repo.ErrUserNotExist) {
-		return nil, userError(fn, err, false)
+		return nil, UserError(fn, err, false)
 	}
 
 	if err := validateName(data.Name); err != nil {
-		return nil, userError(fn, err, true)
+		return nil, UserError(fn, err, true)
 	}
 
 	hash, err := u.hashPassword(data.Password)
 	if err != nil {
-		return nil, userError(fn, err, true)
+		return nil, UserError(fn, err, true)
 	}
 
-	data.Password = string(hash)
+	data.Password = hash
 
 	user, err := u.userRepo.Create(context.Background(), data)
 	if err != nil {
-		return nil, userError(fn, err, false)
+		return nil, UserError(fn, err, false)
 	}
 
 	return user, nil
@@ -122,9 +122,9 @@ func (u *user) Get(id uuid.UUID) (*entity.User, error) {
 	user, err := u.userRepo.GetByID(context.Background(), id)
 	if err != nil {
 		if errors.Is(err, repo.ErrUserNotExist) {
-			return nil, userError(fn, err, true)
+			return nil, UserError(fn, err, true)
 		}
-		return nil, userError(fn, err, false)
+		return nil, UserError(fn, err, false)
 	}
 
 	return user, nil
@@ -134,34 +134,34 @@ func (u *user) Delete(id uuid.UUID) error {
 	const fn = "Delete"
 
 	if err := u.userRepo.DeleteByID(context.Background(), id); err != nil {
-		return userError(fn, err, false)
+		return UserError(fn, err, false)
 	}
 
 	return nil
 }
 
-func (u *user) UpdatePassword(id uuid.UUID, password string) error {
+func (u *user) UpdatePassword(id uuid.UUID, password []byte) error {
 	const fn = "UpdatePassword"
 
 	user, err := u.userRepo.GetByID(context.Background(), id)
 	if err != nil {
 		if errors.Is(err, repo.ErrUserNotExist) {
-			return userError(fn, err, true)
+			return UserError(fn, err, true)
 		}
-		return userError(fn, err, false)
+		return UserError(fn, err, false)
 	}
 
 	hash, err := u.hashPassword(password)
 	if err != nil {
-		return userError(fn, err, true)
+		return UserError(fn, err, true)
 	}
 
-	if err = u.userRepo.UpdatePassword(context.Background(), user.ID, string(hash)); err != nil {
-		return userError(fn, err, false)
+	if err = u.userRepo.UpdatePassword(context.Background(), user.ID, hash); err != nil {
+		return UserError(fn, err, false)
 	}
 
 	if err = u.tokenRepo.DeleteByUser(context.Background(), user.ID); err != nil {
-		return userError(fn, err, false)
+		return UserError(fn, err, false)
 	}
 
 	return nil

@@ -9,7 +9,7 @@ type User interface {
 	Create(data entity.User) (*entity.User, error)
 	Get(id uuid.UUID) (*entity.User, error)
 	Delete(id uuid.UUID) error
-	UpdatePassword(id uuid.UUID, password string) error
+	UpdatePassword(id uuid.UUID, password []byte) error
 }
 
 type Token interface {

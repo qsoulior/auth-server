@@ -73,7 +73,7 @@ func (u *userPostgres) GetByName(ctx context.Context, name string) (*entity.User
 	return &user, nil
 }
 
-func (u *userPostgres) UpdatePassword(ctx context.Context, id uuid.UUID, password string) error {
+func (u *userPostgres) UpdatePassword(ctx context.Context, id uuid.UUID, password []byte) error {
 	const (
 		fn    = "UpdatePassword"
 		query = `UPDATE "user" SET password = $2 WHERE id = $1`

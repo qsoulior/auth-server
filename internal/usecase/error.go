@@ -7,6 +7,7 @@ import (
 
 var (
 	ErrUserExists           = errors.New("user already exists")
+	ErrUserIDInvalid        = errors.New("user id is invalid")
 	ErrNameInvalid          = errors.New("name is invalid")
 	ErrPasswordInvalid      = errors.New("password is invalid")
 	ErrPasswordIncorrect    = errors.New("password is incorrect")
@@ -17,8 +18,8 @@ var (
 )
 
 var (
-	userError  = fnError("User")
-	tokenError = fnError("Token")
+	UserError  = fnError("User")
+	TokenError = fnError("Token")
 )
 
 type Error struct {

@@ -26,18 +26,18 @@ func (u *user) verifyToken(token entity.AccessToken) (uuid.UUID, error) {
 
 	id, err = uuid.FromString(sub)
 	if err != nil {
-		return id, ErrIDInvalid
+		return id, usecase.ErrUserIDInvalid
 	}
 	return id, nil
 }
 
-func (u *user) verifyPassword(id uuid.UUID, password string) error {
+func (u *user) verifyPassword(id uuid.UUID, password []byte) error {
 	user, err := u.usecase.Get(id)
 	if err != nil {
 		return err
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword(user.Password, password); err != nil {
 		return usecase.ErrPasswordIncorrect
 	}
 
@@ -55,37 +55,37 @@ func (u *user) Get(token entity.AccessToken) (*entity.User, error) {
 
 	id, err := u.verifyToken(token)
 	if err != nil {
-		return nil, userError(fn, err)
+		return nil, usecase.UserError(fn, err, true)
 	}
 
 	return u.usecase.Get(id)
 }
 
-func (u *user) Delete(password string, token entity.AccessToken) error {
+func (u *user) Delete(password []byte, token entity.AccessToken) error {
 	const fn = "Delete"
 
 	id, err := u.verifyToken(token)
 	if err != nil {
-		return userError(fn, err)
+		return usecase.UserError(fn, err, true)
 	}
 
 	if err = u.verifyPassword(id, password); err != nil {
-		return userError(fn, err)
+		return usecase.UserError(fn, err, true)
 	}
 
 	return u.usecase.Delete(id)
 }
 
-func (u *user) UpdatePassword(newPassword string, password string, token entity.AccessToken) error {
+func (u *user) UpdatePassword(newPassword []byte, password []byte, token entity.AccessToken) error {
 	const fn = "UpdatePassword"
 
 	id, err := u.verifyToken(token)
 	if err != nil {
-		return userError(fn, err)
+		return usecase.UserError(fn, err, true)
 	}
 
 	if err = u.verifyPassword(id, password); err != nil {
-		return userError(fn, err)
+		return usecase.UserError(fn, err, true)
 	}
 
 	return u.usecase.UpdatePassword(id, newPassword)

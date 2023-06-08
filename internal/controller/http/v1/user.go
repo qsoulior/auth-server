@@ -80,11 +80,12 @@ func (u *user) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = u.usecase.UpdatePassword(body.NewPassword, body.CurrentPassword, token)
+	err = u.usecase.UpdatePassword([]byte(body.NewPassword), []byte(body.CurrentPassword), token)
 	if err != nil {
 		controller.HandleError(w, err, u.logger, func(e *usecase.Error) {
 			controller.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
 		})
+		return
 	}
 
 	writeSuccess(w)
