@@ -98,8 +98,8 @@ func (t *token) Authorize(data entity.User, fingerprint []byte) (entity.AccessTo
 
 	user, err := t.userRepo.GetByName(context.Background(), data.Name)
 	if err != nil {
-		if errors.Is(err, repo.ErrUserNotExist) {
-			return "", nil, TokenError(fn, err, true)
+		if errors.Is(err, repo.ErrNoRows) {
+			return "", nil, TokenError(fn, ErrUserNotExist, true)
 		}
 		return "", nil, TokenError(fn, err, false)
 	}

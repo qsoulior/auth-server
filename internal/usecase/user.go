@@ -93,7 +93,7 @@ func (u *user) Create(data entity.User) (*entity.User, error) {
 	_, err := u.userRepo.GetByName(context.Background(), data.Name)
 	if err == nil {
 		return nil, UserError(fn, ErrUserExists, true)
-	} else if !errors.Is(err, repo.ErrUserNotExist) {
+	} else if !errors.Is(err, repo.ErrNoRows) {
 		return nil, UserError(fn, err, false)
 	}
 
@@ -121,8 +121,8 @@ func (u *user) Get(id uuid.UUID) (*entity.User, error) {
 
 	user, err := u.userRepo.GetByID(context.Background(), id)
 	if err != nil {
-		if errors.Is(err, repo.ErrUserNotExist) {
-			return nil, UserError(fn, err, true)
+		if errors.Is(err, repo.ErrNoRows) {
+			return nil, UserError(fn, ErrUserNotExist, true)
 		}
 		return nil, UserError(fn, err, false)
 	}
@@ -145,8 +145,8 @@ func (u *user) UpdatePassword(id uuid.UUID, password []byte) error {
 
 	user, err := u.userRepo.GetByID(context.Background(), id)
 	if err != nil {
-		if errors.Is(err, repo.ErrUserNotExist) {
-			return UserError(fn, err, true)
+		if errors.Is(err, repo.ErrNoRows) {
+			return UserError(fn, ErrUserNotExist, true)
 		}
 		return UserError(fn, err, false)
 	}

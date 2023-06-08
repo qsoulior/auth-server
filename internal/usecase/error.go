@@ -7,6 +7,7 @@ import (
 
 var (
 	ErrUserExists           = errors.New("user already exists")
+	ErrUserNotExist         = errors.New("user does not exist")
 	ErrUserIDInvalid        = errors.New("user id is invalid")
 	ErrNameInvalid          = errors.New("name is invalid")
 	ErrPasswordInvalid      = errors.New("password is invalid")
