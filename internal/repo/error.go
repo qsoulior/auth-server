@@ -1,9 +1,9 @@
 package repo
 
 import (
-	"github.com/jackc/pgx/v5"
+	"errors"
 )
 
 var (
-	ErrNoRows = pgx.ErrNoRows
+	ErrNoRows = errors.New("no rows in result set")
 )
