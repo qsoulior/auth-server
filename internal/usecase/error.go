@@ -3,6 +3,8 @@ package usecase
 import (
 	"errors"
 	"fmt"
+	"runtime"
+	"strings"
 )
 
 var (
@@ -18,30 +20,26 @@ var (
 	ErrFingerprintInvalid   = errors.New("fingerprint is invalid")
 )
 
-var (
-	UserError  = fnError("User")
-	TokenError = fnError("Token")
-)
-
 type Error struct {
-	UseCase  string
 	Func     string
 	Err      error
 	External bool
 }
 
 func (e *Error) Error() string {
-	return fmt.Sprintf("usecase.%s.%s: %s", e.UseCase, e.Func, e.Err.Error())
+	return fmt.Sprintf("%s: %s", e.Func, e.Err.Error())
 }
 
 func (e *Error) Unwrap() error {
 	return e.Err
 }
 
-type errorFunc func(fn string, err error, external bool) error
+func NewError(err error, external bool) error {
+	pc := make([]uintptr, 1)
+	n := runtime.Callers(2, pc)
+	frames := runtime.CallersFrames(pc[:n])
+	frame, _ := frames.Next()
 
-func fnError(usecase string) errorFunc {
-	return func(fn string, err error, external bool) error {
-		return &Error{usecase, fn, err, external}
-	}
+	fn := strings.Split(frame.Function, "/")
+	return &Error{fn[len(fn)-1], err, external}
 }

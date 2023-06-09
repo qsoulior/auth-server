@@ -94,96 +94,88 @@ func (t *token) create(userID uuid.UUID, fingerprint []byte) (entity.AccessToken
 }
 
 func (t *token) Authorize(data entity.User, fingerprint []byte) (entity.AccessToken, *entity.RefreshToken, error) {
-	const fn = "Authorize"
-
 	user, err := t.userRepo.GetByName(context.Background(), data.Name)
 	if err != nil {
 		if errors.Is(err, repo.ErrNoRows) {
-			return "", nil, TokenError(fn, ErrUserNotExist, true)
+			return "", nil, NewError(ErrUserNotExist, true)
 		}
-		return "", nil, TokenError(fn, err, false)
+		return "", nil, NewError(err, false)
 	}
 
 	if err := bcrypt.CompareHashAndPassword(user.Password, data.Password); err != nil {
-		return "", nil, TokenError(fn, ErrPasswordIncorrect, true)
+		return "", nil, NewError(ErrPasswordIncorrect, true)
 	}
 
 	tokens, err := t.tokenRepo.GetByUser(context.Background(), user.ID)
 	if err != nil {
-		return "", nil, TokenError(fn, err, false)
+		return "", nil, NewError(err, false)
 	}
 
 	if len(tokens) >= t.refreshCap {
 		if err := t.tokenRepo.DeleteByID(context.Background(), tokens[0].ID); err != nil {
-			return "", nil, TokenError(fn, err, false)
+			return "", nil, NewError(err, false)
 		}
 	}
 
 	accessToken, refreshToken, err := t.create(user.ID, fingerprint)
 	if err != nil {
-		return "", nil, TokenError(fn, err, false)
+		return "", nil, NewError(err, false)
 	}
 
 	return accessToken, refreshToken, nil
 }
 
 func (t *token) Refresh(id uuid.UUID, fingerprint []byte) (entity.AccessToken, *entity.RefreshToken, error) {
-	const fn = "Refresh"
-
 	token, err := t.getByID(id)
 	if err != nil {
-		return "", nil, TokenError(fn, err, true)
+		return "", nil, NewError(err, true)
 	}
 
 	if err := t.verifyFingerprint(token, fingerprint); err != nil {
-		return "", nil, TokenError(fn, err, true)
+		return "", nil, NewError(err, true)
 	}
 
 	if err := t.tokenRepo.DeleteByID(context.Background(), token.ID); err != nil {
-		return "", nil, TokenError(fn, err, false)
+		return "", nil, NewError(err, false)
 	}
 
 	accessToken, refreshToken, err := t.create(token.UserID, fingerprint)
 	if err != nil {
-		return "", nil, TokenError(fn, err, false)
+		return "", nil, NewError(err, false)
 	}
 
 	return accessToken, refreshToken, nil
 }
 
 func (t *token) Revoke(id uuid.UUID, fingerprint []byte) error {
-	const fn = "Revoke"
-
 	token, err := t.getByID(id)
 	if err != nil {
-		return TokenError(fn, err, true)
+		return NewError(err, true)
 	}
 
 	if err := t.verifyFingerprint(token, fingerprint); err != nil {
-		return TokenError(fn, err, true)
+		return NewError(err, true)
 	}
 
 	if err = t.tokenRepo.DeleteByID(context.Background(), token.ID); err != nil {
-		return TokenError(fn, err, false)
+		return NewError(err, false)
 	}
 
 	return nil
 }
 
 func (t *token) RevokeAll(id uuid.UUID, fingerprint []byte) error {
-	const fn = "RevokeAll"
-
 	token, err := t.getByID(id)
 	if err != nil {
-		return TokenError(fn, err, true)
+		return NewError(err, true)
 	}
 
 	if err := t.verifyFingerprint(token, fingerprint); err != nil {
-		return TokenError(fn, err, true)
+		return NewError(err, true)
 	}
 
 	if err = t.tokenRepo.DeleteByUser(context.Background(), token.UserID); err != nil {
-		return TokenError(fn, err, false)
+		return NewError(err, false)
 	}
 
 	return nil

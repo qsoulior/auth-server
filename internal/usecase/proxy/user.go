@@ -45,47 +45,39 @@ func (u *user) verifyPassword(id uuid.UUID, password []byte) error {
 }
 
 func (u *user) Create(data entity.User) (*entity.User, error) {
-	const fn = "Create"
-
 	return u.usecase.Create(data)
 }
 
 func (u *user) Get(token entity.AccessToken) (*entity.User, error) {
-	const fn = "Get"
-
 	id, err := u.verifyToken(token)
 	if err != nil {
-		return nil, usecase.UserError(fn, err, true)
+		return nil, usecase.NewError(err, true)
 	}
 
 	return u.usecase.Get(id)
 }
 
 func (u *user) Delete(password []byte, token entity.AccessToken) error {
-	const fn = "Delete"
-
 	id, err := u.verifyToken(token)
 	if err != nil {
-		return usecase.UserError(fn, err, true)
+		return usecase.NewError(err, true)
 	}
 
 	if err = u.verifyPassword(id, password); err != nil {
-		return usecase.UserError(fn, err, true)
+		return usecase.NewError(err, true)
 	}
 
 	return u.usecase.Delete(id)
 }
 
 func (u *user) UpdatePassword(newPassword []byte, password []byte, token entity.AccessToken) error {
-	const fn = "UpdatePassword"
-
 	id, err := u.verifyToken(token)
 	if err != nil {
-		return usecase.UserError(fn, err, true)
+		return usecase.NewError(err, true)
 	}
 
 	if err = u.verifyPassword(id, password); err != nil {
-		return usecase.UserError(fn, err, true)
+		return usecase.NewError(err, true)
 	}
 
 	return u.usecase.UpdatePassword(id, newPassword)
