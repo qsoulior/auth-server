@@ -63,7 +63,7 @@ func (u *user) SignUp(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u *user) ChangePassword(w http.ResponseWriter, r *http.Request) {
-	token, err := auth(r)
+	token, err := readAuth(r)
 	if err != nil {
 		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
@@ -80,7 +80,8 @@ func (u *user) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = u.usecase.UpdatePassword([]byte(body.NewPassword), []byte(body.CurrentPassword), token)
+	fingerprint := readFingerprint(r)
+	err = u.usecase.UpdatePassword([]byte(body.NewPassword), []byte(body.CurrentPassword), token, fingerprint)
 	if err != nil {
 		controller.HandleError(w, err, u.logger, func(e *usecase.Error) {
 			controller.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)

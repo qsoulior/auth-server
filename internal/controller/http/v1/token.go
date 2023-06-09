@@ -69,7 +69,7 @@ func (t *token) Authorize(w http.ResponseWriter, r *http.Request) {
 }
 
 func (t *token) Refresh(w http.ResponseWriter, r *http.Request) {
-	token, err := readToken(r)
+	token, err := readTokenID(r)
 	if err != nil {
 		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
@@ -91,7 +91,7 @@ func (t *token) Refresh(w http.ResponseWriter, r *http.Request) {
 }
 
 func (t *token) Revoke(w http.ResponseWriter, r *http.Request) {
-	token, err := readToken(r)
+	token, err := readTokenID(r)
 	if err != nil {
 		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
@@ -114,7 +114,7 @@ func (t *token) Revoke(w http.ResponseWriter, r *http.Request) {
 }
 
 func (t *token) RevokeAll(w http.ResponseWriter, r *http.Request) {
-	token, err := readToken(r)
+	token, err := readTokenID(r)
 	if err != nil {
 		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return

@@ -7,14 +7,14 @@ import (
 	"github.com/qsoulior/auth-server/pkg/uuid"
 )
 
+type AccessToken = string
+
 type RefreshToken struct {
 	ID          uuid.UUID `json:"id"`
 	ExpiresAt   time.Time `json:"expires_at"`
 	Fingerprint []byte    `json:"fingerprint"`
 	UserID      uuid.UUID `json:"-"`
 }
-
-type AccessToken string
 
 func (t *RefreshToken) UnmarshalJSON(b []byte) error {
 	var v struct {

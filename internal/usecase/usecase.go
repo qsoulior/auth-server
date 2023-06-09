@@ -1,6 +1,8 @@
 package usecase
 
 import (
+	"crypto/sha256"
+
 	"github.com/qsoulior/auth-server/internal/entity"
 	"github.com/qsoulior/auth-server/pkg/uuid"
 )
@@ -17,4 +19,14 @@ type Token interface {
 	Refresh(id uuid.UUID, fingerprint []byte) (entity.AccessToken, *entity.RefreshToken, error)
 	Revoke(id uuid.UUID, fingerprint []byte) error
 	RevokeAll(id uuid.UUID, fingerprint []byte) error
+}
+
+func HashFingerprint(userID uuid.UUID, fingerprint []byte) ([]byte, error) {
+	h := sha256.New()
+	_, err := h.Write(append(fingerprint, userID[:]...))
+	if err != nil {
+		return nil, ErrFingerprintInvalid
+	}
+
+	return h.Sum(nil), nil
 }

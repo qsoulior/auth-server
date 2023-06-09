@@ -9,7 +9,7 @@ import (
 var ErrClaimsInvalid = errors.New("claims is invalid")
 
 type Parser interface {
-	Parse(token string) (string, error)
+	Parse(tokenString string) (string, string, error)
 }
 
 type parser struct {
@@ -26,19 +26,19 @@ func NewParser(params Params) (*parser, error) {
 	return &parser{params, method}, nil
 }
 
-func (p *parser) Parse(tokenStr string) (string, error) {
+func (p *parser) Parse(tokenString string) (string, string, error) {
 	parser := jwt.NewParser(jwt.WithValidMethods([]string{p.params.Algorithm}), jwt.WithIssuer(p.params.Issuer))
-	token, err := parser.ParseWithClaims(tokenStr, &jwt.RegisteredClaims{}, func(t *jwt.Token) (any, error) {
+	token, err := parser.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (any, error) {
 		return p.params.Key, nil
 	})
 
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	if claims, ok := token.Claims.(*jwt.RegisteredClaims); ok {
-		return claims.Subject, nil
+	if claims, ok := token.Claims.(*Claims); ok {
+		return claims.Subject, claims.Fingerprint, nil
 	}
 
-	return "", ErrClaimsInvalid
+	return "", "", ErrClaimsInvalid
 }

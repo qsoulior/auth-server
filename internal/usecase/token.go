@@ -3,7 +3,7 @@ package usecase
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"time"
 
@@ -46,30 +46,20 @@ func (t *token) getByID(id uuid.UUID) (*entity.RefreshToken, error) {
 	return token, nil
 }
 
-func (t *token) hashFingerprint(userID uuid.UUID, fingerprint []byte) ([]byte, error) {
-	h := sha256.New()
-	_, err := h.Write(append(fingerprint, userID[:]...))
-	if err != nil {
-		return nil, ErrFingerprintInvalid
-	}
-
-	return h.Sum(nil), nil
-}
-
 func (t *token) verifyFingerprint(token *entity.RefreshToken, fingerprint []byte) error {
-	fp, err := t.hashFingerprint(token.UserID, fingerprint)
+	fingerprint, err := HashFingerprint(token.UserID, fingerprint)
 	if err != nil {
 		return err
 	}
 
-	if !bytes.Equal(fp, token.Fingerprint) {
+	if !bytes.Equal(fingerprint, token.Fingerprint) {
 		return ErrFingerprintIncorrect
 	}
 	return nil
 }
 
 func (t *token) create(userID uuid.UUID, fingerprint []byte) (entity.AccessToken, *entity.RefreshToken, error) {
-	fp, err := t.hashFingerprint(userID, fingerprint)
+	fp, err := HashFingerprint(userID, fingerprint)
 	if err != nil {
 		return "", nil, err
 	}
@@ -85,7 +75,7 @@ func (t *token) create(userID uuid.UUID, fingerprint []byte) (entity.AccessToken
 		return "", nil, err
 	}
 
-	accessToken, err := t.builder.Build(userID.String(), time.Duration(t.accessAge)*time.Minute)
+	accessToken, err := t.builder.Build(userID.String(), time.Duration(t.accessAge)*time.Minute, hex.EncodeToString(fp))
 	if err != nil {
 		return "", nil, err
 	}

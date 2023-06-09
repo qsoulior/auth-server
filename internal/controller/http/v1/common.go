@@ -14,7 +14,7 @@ import (
 
 const api = "/api/v1"
 
-func auth(r *http.Request) (entity.AccessToken, error) {
+func readAuth(r *http.Request) (entity.AccessToken, error) {
 	authorization := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
 	if len(authorization) < 2 || authorization[0] != "Bearer" {
 		return "", errors.New("invalid authorization header")
@@ -33,7 +33,7 @@ func readUser(r *http.Request) (entity.User, error) {
 	return user, nil
 }
 
-func readToken(r *http.Request) (uuid.UUID, error) {
+func readTokenID(r *http.Request) (uuid.UUID, error) {
 	var (
 		data  string
 		token uuid.UUID
