@@ -76,12 +76,12 @@ func NewUser(userRepo repo.User, tokenRepo repo.Token, params UserParams) *user 
 
 func (u *user) hashPassword(password []byte) ([]byte, error) {
 	if err := validatePassword(password); err != nil {
-		return nil, err
+		return nil, NewError(err, true)
 	}
 
 	hash, err := bcrypt.GenerateFromPassword(password, u.hashCost)
 	if err != nil {
-		return nil, ErrPasswordInvalid
+		return nil, NewError(err, false)
 	}
 
 	return hash, nil
@@ -101,7 +101,7 @@ func (u *user) Create(data entity.User) (*entity.User, error) {
 
 	hash, err := u.hashPassword(data.Password)
 	if err != nil {
-		return nil, NewError(err, true)
+		return nil, err
 	}
 
 	data.Password = hash
@@ -127,7 +127,12 @@ func (u *user) Get(id uuid.UUID) (*entity.User, error) {
 }
 
 func (u *user) Delete(id uuid.UUID) error {
-	if err := u.userRepo.DeleteByID(context.Background(), id); err != nil {
+	user, err := u.Get(id)
+	if err != nil {
+		return err
+	}
+
+	if err := u.userRepo.DeleteByID(context.Background(), user.ID); err != nil {
 		return NewError(err, false)
 	}
 
@@ -135,17 +140,14 @@ func (u *user) Delete(id uuid.UUID) error {
 }
 
 func (u *user) UpdatePassword(id uuid.UUID, password []byte) error {
-	user, err := u.userRepo.GetByID(context.Background(), id)
+	user, err := u.Get(id)
 	if err != nil {
-		if errors.Is(err, repo.ErrNoRows) {
-			return NewError(ErrUserNotExist, true)
-		}
-		return NewError(err, false)
+		return err
 	}
 
 	hash, err := u.hashPassword(password)
 	if err != nil {
-		return NewError(err, true)
+		return err
 	}
 
 	if err = u.userRepo.UpdatePassword(context.Background(), user.ID, hash); err != nil {

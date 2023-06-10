@@ -38,9 +38,11 @@ func Run(cfg *Config, logger log.Logger) error {
 
 	tokenUseCase := usecase.NewToken(userRepo, tokenRepo, builder, usecase.TokenParams{cfg.JWT.Age, cfg.RT.Age, cfg.RT.Cap})
 	logger.Info("token usecase created")
+	tokenProxy := proxy.NewToken(tokenUseCase)
+	logger.Info("token proxy created")
 
 	// server listening
-	server := NewServer(cfg, logger, userProxy, tokenUseCase)
+	server := NewServer(cfg, logger, userProxy, tokenProxy)
 	logger.Info("server created with address " + server.Addr)
 	return fmt.Errorf("server down: %w", server.ListenAndServe())
 }

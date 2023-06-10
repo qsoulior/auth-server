@@ -20,7 +20,7 @@ func readAuth(r *http.Request) (entity.AccessToken, error) {
 		return "", errors.New("invalid authorization header")
 	}
 
-	return entity.AccessToken(authorization[1]), nil
+	return authorization[1], nil
 }
 
 func readUser(r *http.Request) (entity.User, error) {

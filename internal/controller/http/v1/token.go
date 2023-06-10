@@ -5,15 +5,16 @@ import (
 
 	controller "github.com/qsoulior/auth-server/internal/controller/http"
 	"github.com/qsoulior/auth-server/internal/usecase"
+	"github.com/qsoulior/auth-server/internal/usecase/proxy"
 	"github.com/qsoulior/auth-server/pkg/log"
 )
 
 type token struct {
-	usecase usecase.Token
+	usecase proxy.Token
 	logger  log.Logger
 }
 
-func HandleToken(usecase usecase.Token, mux *http.ServeMux, logger log.Logger) {
+func HandleToken(usecase proxy.Token, mux *http.ServeMux, logger log.Logger) {
 	token := &token{usecase, logger}
 	mux.Handle(api+"/token/", http.StripPrefix(api+"/token", token))
 }
@@ -98,7 +99,7 @@ func (t *token) Revoke(w http.ResponseWriter, r *http.Request) {
 	}
 	fingerprint := readFingerprint(r)
 
-	err = t.usecase.Revoke(token, fingerprint)
+	err = t.usecase.Delete(token, fingerprint)
 	if err != nil {
 		controller.HandleError(w, err, t.logger, func(e *usecase.Error) {
 			if e.Err == usecase.ErrTokenExpired {
@@ -121,7 +122,7 @@ func (t *token) RevokeAll(w http.ResponseWriter, r *http.Request) {
 	}
 	fingerprint := readFingerprint(r)
 
-	err = t.usecase.RevokeAll(token, fingerprint)
+	err = t.usecase.DeleteAll(token, fingerprint)
 	if err != nil {
 		controller.HandleError(w, err, t.logger, func(e *usecase.Error) {
 			if e.Err == usecase.ErrTokenExpired {

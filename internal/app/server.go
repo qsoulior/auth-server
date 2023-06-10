@@ -6,12 +6,11 @@ import (
 
 	controller "github.com/qsoulior/auth-server/internal/controller/http"
 	v1 "github.com/qsoulior/auth-server/internal/controller/http/v1"
-	"github.com/qsoulior/auth-server/internal/usecase"
 	"github.com/qsoulior/auth-server/internal/usecase/proxy"
 	"github.com/qsoulior/auth-server/pkg/log"
 )
 
-func NewServer(cfg *Config, logger log.Logger, user proxy.User, token usecase.Token) *http.Server {
+func NewServer(cfg *Config, logger log.Logger, user proxy.User, token proxy.Token) *http.Server {
 
 	mux := http.NewServeMux()
 	mux.Handle("/", controller.Index())

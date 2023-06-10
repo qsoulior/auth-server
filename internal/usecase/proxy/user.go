@@ -19,25 +19,23 @@ func NewUser(usecase usecase.User, parser jwt.Parser) *user {
 	return &user{usecase, parser}
 }
 
-func (u *user) verifyToken(token entity.AccessToken, fingerprint []byte) (uuid.UUID, error) {
+func (u *user) verifyToken(token entity.AccessToken, fpData []byte) (uuid.UUID, error) {
 	var userID uuid.UUID
-	sub, fp, err := u.parser.Parse(token)
+	claims, err := u.parser.Parse(token)
 	if err != nil {
 		return userID, err
 	}
 
-	userID, err = uuid.FromString(sub)
+	userID, err = uuid.FromString(claims.Subject)
 	if err != nil {
 		return userID, usecase.ErrUserIDInvalid
 	}
 
-	fingerprint, err = usecase.HashFingerprint(userID, fingerprint)
-	if err != nil {
-		return userID, err
-	}
+	fp := usecase.NewFingerprint(fpData, userID)
+	fpBytes, _ := hex.DecodeString(claims.Fingerprint)
 
-	if hex.EncodeToString(fingerprint) != fp {
-		return userID, usecase.ErrFingerprintIncorrect
+	if err := fp.Verify(fpBytes); err != nil {
+		return userID, usecase.NewError(err, true)
 	}
 
 	return userID, nil
@@ -69,28 +67,28 @@ func (u *user) Get(token entity.AccessToken, fingerprint []byte) (*entity.User, 
 	return u.usecase.Get(id)
 }
 
-func (u *user) Delete(password []byte, token entity.AccessToken, fingerprint []byte) error {
+func (u *user) Delete(currentPwd []byte, token entity.AccessToken, fingerprint []byte) error {
 	id, err := u.verifyToken(token, fingerprint)
 	if err != nil {
 		return usecase.NewError(err, true)
 	}
 
-	if err = u.verifyPassword(id, password); err != nil {
+	if err = u.verifyPassword(id, currentPwd); err != nil {
 		return usecase.NewError(err, true)
 	}
 
 	return u.usecase.Delete(id)
 }
 
-func (u *user) UpdatePassword(newPassword []byte, password []byte, token entity.AccessToken, fingerprint []byte) error {
+func (u *user) UpdatePassword(newPwd []byte, currentPwd []byte, token entity.AccessToken, fingerprint []byte) error {
 	id, err := u.verifyToken(token, fingerprint)
 	if err != nil {
 		return usecase.NewError(err, true)
 	}
 
-	if err = u.verifyPassword(id, password); err != nil {
+	if err = u.verifyPassword(id, currentPwd); err != nil {
 		return usecase.NewError(err, true)
 	}
 
-	return u.usecase.UpdatePassword(id, newPassword)
+	return u.usecase.UpdatePassword(id, newPwd)
 }
