@@ -17,17 +17,17 @@ func NewTokenPostgres(db *db.Postgres) *tokenPostgres {
 	return &tokenPostgres{db}
 }
 
-func (t *tokenPostgres) Create(ctx context.Context, token entity.RefreshToken) (*entity.RefreshToken, error) {
+func (t *tokenPostgres) Create(ctx context.Context, data entity.RefreshToken) (*entity.RefreshToken, error) {
 	const query = `INSERT INTO token(expires_at, fingerprint, user_id) VALUES ($1, $2, $3) RETURNING *`
 
-	var created entity.RefreshToken
-	err := t.Pool.QueryRow(ctx, query, token.ExpiresAt, token.Fingerprint, token.UserID).Scan(&created.ID, &created.ExpiresAt, &created.Fingerprint, &created.UserID)
+	var token entity.RefreshToken
+	err := t.Pool.QueryRow(ctx, query, data.ExpiresAt, data.Fingerprint, data.UserID).Scan(&token.ID, &token.ExpiresAt, &token.Fingerprint, &token.UserID)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &created, nil
+	return &token, nil
 }
 
 func (t *tokenPostgres) GetByID(ctx context.Context, id uuid.UUID) (*entity.RefreshToken, error) {

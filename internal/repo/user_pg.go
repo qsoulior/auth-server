@@ -17,17 +17,17 @@ func NewUserPostgres(db *db.Postgres) *userPostgres {
 	return &userPostgres{db}
 }
 
-func (u *userPostgres) Create(ctx context.Context, user entity.User) (*entity.User, error) {
+func (u *userPostgres) Create(ctx context.Context, data entity.User) (*entity.User, error) {
 	const query = `INSERT INTO "user"(name, password) VALUES ($1, $2) RETURNING *`
 
-	var created entity.User
-	err := u.Pool.QueryRow(ctx, query, user.Name, user.Password).Scan(&created.ID, &created.Name, &created.Password)
+	var user entity.User
+	err := u.Pool.QueryRow(ctx, query, data.Name, data.Password).Scan(&user.ID, &user.Name, &user.Password)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &created, nil
+	return &user, nil
 }
 
 func (u *userPostgres) GetByID(ctx context.Context, id uuid.UUID) (*entity.User, error) {
