@@ -35,7 +35,7 @@ func (u *user) verifyToken(token entity.AccessToken, fpData []byte) (uuid.UUID, 
 	fpBytes, _ := hex.DecodeString(claims.Fingerprint)
 
 	if err := fp.Verify(fpBytes); err != nil {
-		return userID, usecase.NewError(err, true)
+		return userID, err
 	}
 
 	return userID, nil

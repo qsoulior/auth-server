@@ -7,6 +7,12 @@ import (
 	"github.com/qsoulior/auth-server/pkg/uuid"
 )
 
+type Role interface {
+	Create(ctx context.Context, role entity.Role) (*entity.Role, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*entity.Role, error)
+	DeleteByID(ctx context.Context, id uuid.UUID) error
+}
+
 type User interface {
 	Create(ctx context.Context, user entity.User) (*entity.User, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*entity.User, error)
