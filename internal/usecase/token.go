@@ -13,6 +13,12 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type TokenRepos struct {
+	User  repo.User
+	Token repo.Token
+	Role  repo.Role
+}
+
 type TokenParams struct {
 	AccessAge  int
 	RefreshAge int
@@ -20,18 +26,13 @@ type TokenParams struct {
 }
 
 type token struct {
-	userRepo  repo.User
-	tokenRepo repo.Token
-	roleRepo  repo.Role
-	builder   jwt.Builder
-
-	accessAge  int
-	refreshAge int
-	refreshCap int
+	repos   TokenRepos
+	params  TokenParams
+	builder jwt.Builder
 }
 
-func NewToken(userRepo repo.User, tokenRepo repo.Token, roleRepo repo.Role, builder jwt.Builder, params TokenParams) *token {
-	return &token{userRepo, tokenRepo, roleRepo, builder, params.AccessAge, params.RefreshAge, params.RefreshCap}
+func NewToken(repos TokenRepos, params TokenParams, builder jwt.Builder) *token {
+	return &token{repos, params, builder}
 }
 
 func (t *token) create(userID uuid.UUID, fpData []byte) (entity.AccessToken, *entity.RefreshToken, error) {
@@ -43,17 +44,17 @@ func (t *token) create(userID uuid.UUID, fpData []byte) (entity.AccessToken, *en
 	fpString := hex.EncodeToString(fpBytes)
 
 	data := entity.RefreshToken{
-		ExpiresAt:   time.Now().AddDate(0, 0, t.refreshAge),
+		ExpiresAt:   time.Now().AddDate(0, 0, t.params.RefreshAge),
 		Fingerprint: fpBytes,
 		UserID:      userID,
 	}
 
-	refreshToken, err := t.tokenRepo.Create(context.Background(), data)
+	refreshToken, err := t.repos.Token.Create(context.Background(), data)
 	if err != nil {
 		return "", nil, NewError(err, false)
 	}
 
-	roles, err := t.roleRepo.GetByUser(context.Background(), userID)
+	roles, err := t.repos.Role.GetByUser(context.Background(), userID)
 	if err != nil {
 		return "", nil, NewError(err, false)
 	}
@@ -63,7 +64,7 @@ func (t *token) create(userID uuid.UUID, fpData []byte) (entity.AccessToken, *en
 		rolesID[i] = role.ID.String()
 	}
 
-	accessToken, err := t.builder.Build(userID.String(), time.Duration(t.accessAge)*time.Minute, fpString, rolesID)
+	accessToken, err := t.builder.Build(userID.String(), time.Duration(t.params.AccessAge)*time.Minute, fpString, rolesID)
 	if err != nil {
 		return "", nil, NewError(err, false)
 	}
@@ -72,7 +73,7 @@ func (t *token) create(userID uuid.UUID, fpData []byte) (entity.AccessToken, *en
 }
 
 func (t *token) Authorize(data entity.User, fingerprint []byte) (entity.AccessToken, *entity.RefreshToken, error) {
-	user, err := t.userRepo.GetByName(context.Background(), data.Name)
+	user, err := t.repos.User.GetByName(context.Background(), data.Name)
 	if err != nil {
 		if errors.Is(err, repo.ErrNoRows) {
 			return "", nil, NewError(ErrUserNotExist, true)
@@ -84,13 +85,13 @@ func (t *token) Authorize(data entity.User, fingerprint []byte) (entity.AccessTo
 		return "", nil, NewError(ErrPasswordIncorrect, true)
 	}
 
-	tokens, err := t.tokenRepo.GetByUser(context.Background(), user.ID)
+	tokens, err := t.repos.Token.GetByUser(context.Background(), user.ID)
 	if err != nil {
 		return "", nil, NewError(err, false)
 	}
 
-	if len(tokens) >= t.refreshCap {
-		if err := t.tokenRepo.DeleteByID(context.Background(), tokens[0].ID); err != nil {
+	if len(tokens) >= t.params.RefreshCap {
+		if err := t.repos.Token.DeleteByID(context.Background(), tokens[0].ID); err != nil {
 			return "", nil, NewError(err, false)
 		}
 	}
@@ -109,7 +110,7 @@ func (t *token) Refresh(id uuid.UUID) (entity.AccessToken, *entity.RefreshToken,
 		return "", nil, err
 	}
 
-	if err := t.tokenRepo.DeleteByID(context.Background(), token.ID); err != nil {
+	if err := t.repos.Token.DeleteByID(context.Background(), token.ID); err != nil {
 		return "", nil, NewError(err, false)
 	}
 
@@ -122,7 +123,7 @@ func (t *token) Refresh(id uuid.UUID) (entity.AccessToken, *entity.RefreshToken,
 }
 
 func (t *token) Get(id uuid.UUID) (*entity.RefreshToken, error) {
-	token, err := t.tokenRepo.GetByID(context.Background(), id)
+	token, err := t.repos.Token.GetByID(context.Background(), id)
 	if err != nil {
 		if errors.Is(err, repo.ErrNoRows) {
 			return nil, NewError(ErrTokenIncorrect, true)
@@ -142,7 +143,7 @@ func (t *token) Delete(id uuid.UUID) error {
 		return err
 	}
 
-	if err = t.tokenRepo.DeleteByID(context.Background(), token.ID); err != nil {
+	if err = t.repos.Token.DeleteByID(context.Background(), token.ID); err != nil {
 		return NewError(err, false)
 	}
 
@@ -155,7 +156,7 @@ func (t *token) DeleteAll(id uuid.UUID) error {
 		return err
 	}
 
-	if err = t.tokenRepo.DeleteByUser(context.Background(), token.UserID); err != nil {
+	if err = t.repos.Token.DeleteByUser(context.Background(), token.UserID); err != nil {
 		return NewError(err, false)
 	}
 

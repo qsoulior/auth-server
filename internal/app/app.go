@@ -27,17 +27,25 @@ func Run(cfg *Config, logger log.Logger) error {
 	}
 	logger.Info("jwt module initialized")
 
-	// usecases initialization
+	// repos initialization
 	userRepo := repo.NewUserPostgres(postgres)
 	tokenRepo := repo.NewTokenPostgres(postgres)
 	roleRepo := repo.NewRolePostgres(postgres)
 
-	userUseCase := usecase.NewUser(userRepo, tokenRepo, usecase.UserParams{cfg.Bcrypt.Cost})
+	// usecases initialization
+	userUseCase := usecase.NewUser(
+		usecase.UserRepos{userRepo, tokenRepo},
+		usecase.UserParams{cfg.Bcrypt.Cost},
+	)
 	logger.Info("user usecase created")
 	userProxy := proxy.NewUser(userUseCase, parser)
 	logger.Info("user proxy created")
 
-	tokenUseCase := usecase.NewToken(userRepo, tokenRepo, roleRepo, builder, usecase.TokenParams{cfg.JWT.Age, cfg.RT.Age, cfg.RT.Cap})
+	tokenUseCase := usecase.NewToken(
+		usecase.TokenRepos{userRepo, tokenRepo, roleRepo},
+		usecase.TokenParams{cfg.JWT.Age, cfg.RT.Age, cfg.RT.Cap},
+		builder,
+	)
 	logger.Info("token usecase created")
 	tokenProxy := proxy.NewToken(tokenUseCase)
 	logger.Info("token proxy created")

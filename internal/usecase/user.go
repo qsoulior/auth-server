@@ -59,19 +59,22 @@ func validatePassword(password []byte) error {
 	return ErrPasswordInvalid
 }
 
+type UserRepos struct {
+	User  repo.User
+	Token repo.Token
+}
+
 type UserParams struct {
 	HashCost int
 }
 
 type user struct {
-	userRepo  repo.User
-	tokenRepo repo.Token
-
-	hashCost int
+	repos  UserRepos
+	params UserParams
 }
 
-func NewUser(userRepo repo.User, tokenRepo repo.Token, params UserParams) *user {
-	return &user{userRepo, tokenRepo, params.HashCost}
+func NewUser(repos UserRepos, params UserParams) *user {
+	return &user{repos, params}
 }
 
 func (u *user) hashPassword(password []byte) ([]byte, error) {
@@ -79,7 +82,7 @@ func (u *user) hashPassword(password []byte) ([]byte, error) {
 		return nil, NewError(err, true)
 	}
 
-	hash, err := bcrypt.GenerateFromPassword(password, u.hashCost)
+	hash, err := bcrypt.GenerateFromPassword(password, u.params.HashCost)
 	if err != nil {
 		return nil, NewError(err, false)
 	}
@@ -88,7 +91,7 @@ func (u *user) hashPassword(password []byte) ([]byte, error) {
 }
 
 func (u *user) Create(data entity.User) (*entity.User, error) {
-	_, err := u.userRepo.GetByName(context.Background(), data.Name)
+	_, err := u.repos.User.GetByName(context.Background(), data.Name)
 	if err == nil {
 		return nil, NewError(ErrUserExists, true)
 	} else if !errors.Is(err, repo.ErrNoRows) {
@@ -106,7 +109,7 @@ func (u *user) Create(data entity.User) (*entity.User, error) {
 
 	data.Password = hash
 
-	user, err := u.userRepo.Create(context.Background(), data)
+	user, err := u.repos.User.Create(context.Background(), data)
 	if err != nil {
 		return nil, NewError(err, false)
 	}
@@ -115,7 +118,7 @@ func (u *user) Create(data entity.User) (*entity.User, error) {
 }
 
 func (u *user) Get(id uuid.UUID) (*entity.User, error) {
-	user, err := u.userRepo.GetByID(context.Background(), id)
+	user, err := u.repos.User.GetByID(context.Background(), id)
 	if err != nil {
 		if errors.Is(err, repo.ErrNoRows) {
 			return nil, NewError(ErrUserNotExist, true)
@@ -132,7 +135,7 @@ func (u *user) Delete(id uuid.UUID) error {
 		return err
 	}
 
-	if err := u.userRepo.DeleteByID(context.Background(), user.ID); err != nil {
+	if err := u.repos.User.DeleteByID(context.Background(), user.ID); err != nil {
 		return NewError(err, false)
 	}
 
@@ -150,11 +153,11 @@ func (u *user) UpdatePassword(id uuid.UUID, password []byte) error {
 		return err
 	}
 
-	if err = u.userRepo.UpdatePassword(context.Background(), user.ID, hash); err != nil {
+	if err = u.repos.User.UpdatePassword(context.Background(), user.ID, hash); err != nil {
 		return NewError(err, false)
 	}
 
-	if err = u.tokenRepo.DeleteByUser(context.Background(), user.ID); err != nil {
+	if err = u.repos.Token.DeleteByUser(context.Background(), user.ID); err != nil {
 		return NewError(err, false)
 	}
 
