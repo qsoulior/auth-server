@@ -7,7 +7,7 @@ import (
 )
 
 type Builder interface {
-	Build(subject string, age time.Duration, fingerprint string) (string, error)
+	Build(subject string, age time.Duration, fingerprint string, roles []string) (string, error)
 }
 
 type builder struct {
@@ -24,9 +24,10 @@ func NewBuilder(params Params) (*builder, error) {
 	return &builder{params, method}, nil
 }
 
-func (b *builder) Build(subject string, age time.Duration, fingerprint string) (string, error) {
+func (b *builder) Build(subject string, age time.Duration, fingerprint string, roles []string) (string, error) {
 	claims := &Claims{
 		fingerprint,
+		roles,
 		jwt.RegisteredClaims{
 			Issuer:    b.params.Issuer,
 			Subject:   subject,

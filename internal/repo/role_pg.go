@@ -47,10 +47,36 @@ func (r *rolePostgres) GetByID(ctx context.Context, id uuid.UUID) (*entity.Role,
 	return &role, nil
 }
 
+func (r *rolePostgres) GetByUser(ctx context.Context, userID uuid.UUID) ([]entity.Role, error) {
+	const query = `SELECT id, title, description FROM (SELECT * FROM user_role WHERE user_id = $1) AS user_role JOIN role ON user_role.role_id = role.id`
+
+	rows, err := r.Pool.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	roles, err := pgx.CollectRows(rows, pgx.RowToStructByPos[entity.Role])
+	if err != nil {
+		return nil, err
+	}
+
+	return roles, nil
+}
+
 func (r *rolePostgres) DeleteByID(ctx context.Context, id uuid.UUID) error {
 	const query = `DELETE FROM role WHERE id = $1`
 
 	if _, err := r.Pool.Exec(ctx, query, id); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *rolePostgres) DeleteByUser(ctx context.Context, userID uuid.UUID) error {
+	const query = `DELETE FROM user_role WHERE user_id = $1`
+
+	if _, err := r.Pool.Exec(ctx, query, userID); err != nil {
 		return err
 	}
 

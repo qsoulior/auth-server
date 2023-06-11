@@ -10,7 +10,9 @@ import (
 type Role interface {
 	Create(ctx context.Context, data entity.Role) (*entity.Role, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*entity.Role, error)
+	GetByUser(ctx context.Context, userID uuid.UUID) ([]entity.Role, error)
 	DeleteByID(ctx context.Context, id uuid.UUID) error
+	DeleteByUser(ctx context.Context, userID uuid.UUID) error
 }
 
 type User interface {

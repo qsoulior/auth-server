@@ -52,7 +52,7 @@ func (t *token) create(userID uuid.UUID, fpData []byte) (entity.AccessToken, *en
 		return "", nil, NewError(err, false)
 	}
 
-	accessToken, err := t.builder.Build(userID.String(), time.Duration(t.accessAge)*time.Minute, fpString)
+	accessToken, err := t.builder.Build(userID.String(), time.Duration(t.accessAge)*time.Minute, fpString, []string{})
 	if err != nil {
 		return "", nil, NewError(err, false)
 	}

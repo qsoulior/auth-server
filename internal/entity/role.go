@@ -7,3 +7,8 @@ type Role struct {
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
 }
+
+type UserRole struct {
+	RoleID uuid.UUID `json:"-"`
+	UserID uuid.UUID `json:"-"`
+}
