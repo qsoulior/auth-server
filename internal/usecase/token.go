@@ -22,6 +22,7 @@ type TokenParams struct {
 type token struct {
 	userRepo  repo.User
 	tokenRepo repo.Token
+	roleRepo  repo.Role
 	builder   jwt.Builder
 
 	accessAge  int
@@ -29,8 +30,8 @@ type token struct {
 	refreshCap int
 }
 
-func NewToken(userRepo repo.User, tokenRepo repo.Token, builder jwt.Builder, params TokenParams) *token {
-	return &token{userRepo, tokenRepo, builder, params.AccessAge, params.RefreshAge, params.RefreshCap}
+func NewToken(userRepo repo.User, tokenRepo repo.Token, roleRepo repo.Role, builder jwt.Builder, params TokenParams) *token {
+	return &token{userRepo, tokenRepo, roleRepo, builder, params.AccessAge, params.RefreshAge, params.RefreshCap}
 }
 
 func (t *token) create(userID uuid.UUID, fpData []byte) (entity.AccessToken, *entity.RefreshToken, error) {
@@ -52,7 +53,17 @@ func (t *token) create(userID uuid.UUID, fpData []byte) (entity.AccessToken, *en
 		return "", nil, NewError(err, false)
 	}
 
-	accessToken, err := t.builder.Build(userID.String(), time.Duration(t.accessAge)*time.Minute, fpString, []string{})
+	roles, err := t.roleRepo.GetByUser(context.Background(), userID)
+	if err != nil {
+		return "", nil, NewError(err, false)
+	}
+
+	rolesID := make([]string, len(roles))
+	for i, role := range roles {
+		rolesID[i] = role.ID.String()
+	}
+
+	accessToken, err := t.builder.Build(userID.String(), time.Duration(t.accessAge)*time.Minute, fpString, rolesID)
 	if err != nil {
 		return "", nil, NewError(err, false)
 	}
