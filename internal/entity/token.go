@@ -7,7 +7,7 @@ import (
 	"github.com/qsoulior/auth-server/pkg/uuid"
 )
 
-type AccessToken = string
+type AccessToken string
 
 type RefreshToken struct {
 	ID          uuid.UUID `json:"id"`

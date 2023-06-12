@@ -18,6 +18,11 @@ type TokenRepos struct {
 	Role  repo.Role
 }
 
+type TokenJWT struct {
+	jwt.Builder
+	jwt.Parser
+}
+
 type TokenParams struct {
 	AccessAge  int
 	RefreshAge int
@@ -25,14 +30,13 @@ type TokenParams struct {
 }
 
 type token struct {
-	repos   TokenRepos
-	params  TokenParams
-	builder jwt.Builder
-	parser  jwt.Parser
+	repos  TokenRepos
+	jwt    TokenJWT
+	params TokenParams
 }
 
-func NewToken(repos TokenRepos, params TokenParams, builder jwt.Builder, parser jwt.Parser) *token {
-	return &token{repos, params, builder, parser}
+func NewToken(repos TokenRepos, jwt TokenJWT, params TokenParams) *token {
+	return &token{repos, jwt, params}
 }
 
 func (t *token) verify(token *entity.RefreshToken, userData []byte) error {
@@ -75,12 +79,12 @@ func (t *token) create(userID uuid.UUID, userData []byte) (entity.AccessToken, *
 		rolesID[i] = role.ID.String()
 	}
 
-	at, err := t.builder.Build(userID.String(), time.Duration(t.params.AccessAge)*time.Minute, fpHash.HexString(), rolesID)
+	at, err := t.jwt.Build(userID.String(), time.Duration(t.params.AccessAge)*time.Minute, fpHash.HexString(), rolesID)
 	if err != nil {
 		return "", nil, NewError(err, false)
 	}
 
-	return at, rt, nil
+	return entity.AccessToken(at), rt, nil
 }
 
 func (t *token) Create(userID uuid.UUID, userData []byte) (entity.AccessToken, *entity.RefreshToken, error) {
@@ -142,7 +146,7 @@ func (t *token) Get(id uuid.UUID) (*entity.RefreshToken, error) {
 
 func (t *token) Authorize(token entity.AccessToken, userData []byte) (uuid.UUID, error) {
 	var userID uuid.UUID
-	claims, err := t.parser.Parse(token)
+	claims, err := t.jwt.Parse(string(token))
 	if err != nil {
 		return userID, NewError(err, true)
 	}

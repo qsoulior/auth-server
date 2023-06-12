@@ -38,7 +38,7 @@ func readAccessToken(r *http.Request) entity.AccessToken {
 		return ""
 	}
 
-	return authorization[1]
+	return entity.AccessToken(authorization[1])
 }
 
 func readRefreshToken(r *http.Request) (uuid.UUID, error) {

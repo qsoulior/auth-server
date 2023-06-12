@@ -19,7 +19,7 @@ type (
 		HTTP     HTTPConfig
 		Postgres PostgresConfig
 		RT       RTConfig
-		JWT      JWTConfig
+		AT       ATConfig
 		Bcrypt   BcryptConfig
 	}
 
@@ -43,9 +43,9 @@ type (
 		Age int `env:"RT_AGE" default:"30"`
 	}
 
-	JWTConfig struct {
-		Alg string `env:"JWT_ALG" default:"HS256"`
-		Age int    `env:"JWT_AGE" default:"15"`
+	ATConfig struct {
+		Alg string `env:"AT_ALG" default:"HS256"`
+		Age int    `env:"AT_AGE" default:"15"`
 	}
 
 	BcryptConfig struct {
