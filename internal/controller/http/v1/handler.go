@@ -22,15 +22,6 @@ func Handler(user usecase.User, token usecase.Token, logger log.Logger) http.Han
 	return mux
 }
 
-func readAuth(r *http.Request) entity.AccessToken {
-	authorization := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
-	if len(authorization) < 2 || authorization[0] != "Bearer" {
-		return ""
-	}
-
-	return authorization[1]
-}
-
 func readUser(r *http.Request) (entity.User, error) {
 	var user entity.User
 	d := json.NewDecoder(r.Body)
@@ -41,7 +32,16 @@ func readUser(r *http.Request) (entity.User, error) {
 	return user, nil
 }
 
-func readTokenID(r *http.Request) (uuid.UUID, error) {
+func readAccessToken(r *http.Request) entity.AccessToken {
+	authorization := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
+	if len(authorization) < 2 || authorization[0] != "Bearer" {
+		return ""
+	}
+
+	return authorization[1]
+}
+
+func readRefreshToken(r *http.Request) (uuid.UUID, error) {
 	var (
 		data  string
 		token uuid.UUID
@@ -63,34 +63,33 @@ func readFingerprint(r *http.Request) []byte {
 }
 
 func writeSuccess(w http.ResponseWriter) {
-	w.WriteHeader(200)
-
 	e := json.NewEncoder(w)
 	e.Encode(map[string]string{
 		"message": "success",
 	})
 }
 
-func writeToken(w http.ResponseWriter, access entity.AccessToken, refresh *entity.RefreshToken) {
+func writeAccessToken(w http.ResponseWriter, token entity.AccessToken) {
+	e := json.NewEncoder(w)
+	e.Encode(map[string]any{
+		"access_token": token,
+	})
+}
+
+func writeRefreshToken(w http.ResponseWriter, token *entity.RefreshToken) {
 	cookie := &http.Cookie{
 		Name:     "refresh_token",
-		Value:    refresh.ID.String(),
-		Expires:  refresh.ExpiresAt,
+		Value:    token.ID.String(),
+		Expires:  token.ExpiresAt,
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
 	}
 
 	http.SetCookie(w, cookie)
-	w.WriteHeader(200)
-
-	e := json.NewEncoder(w)
-	e.Encode(map[string]any{
-		"access_token": access,
-	})
 }
 
-func deleteToken(w http.ResponseWriter) {
+func deleteRefreshToken(w http.ResponseWriter) {
 	cookie := &http.Cookie{
 		Name:    "refresh_token",
 		Expires: time.Unix(0, 0),

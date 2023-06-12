@@ -60,11 +60,13 @@ func (t *TokenHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeToken(w, accessToken, refreshToken)
+	writeRefreshToken(w, refreshToken)
+	w.WriteHeader(200)
+	writeAccessToken(w, accessToken)
 }
 
 func (t *TokenHandler) Refresh(w http.ResponseWriter, r *http.Request) {
-	token, err := readTokenID(r)
+	token, err := readRefreshToken(r)
 	if err != nil {
 		handler.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
@@ -75,18 +77,20 @@ func (t *TokenHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		handler.HandleError(w, err, t.logger, func(e *usecase.Error) {
 			if e.Err == usecase.ErrTokenExpired {
-				deleteToken(w)
+				deleteRefreshToken(w)
 			}
 			handler.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
 		})
 		return
 	}
 
-	writeToken(w, accessToken, refreshToken)
+	writeRefreshToken(w, refreshToken)
+	w.WriteHeader(200)
+	writeAccessToken(w, accessToken)
 }
 
 func (t *TokenHandler) Revoke(w http.ResponseWriter, r *http.Request) {
-	token, err := readTokenID(r)
+	token, err := readRefreshToken(r)
 	if err != nil {
 		handler.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
@@ -97,19 +101,20 @@ func (t *TokenHandler) Revoke(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		handler.HandleError(w, err, t.logger, func(e *usecase.Error) {
 			if e.Err == usecase.ErrTokenExpired {
-				deleteToken(w)
+				deleteRefreshToken(w)
 			}
 			handler.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
 		})
 		return
 	}
 
-	deleteToken(w)
+	deleteRefreshToken(w)
+	w.WriteHeader(200)
 	writeSuccess(w)
 }
 
 func (t *TokenHandler) RevokeAll(w http.ResponseWriter, r *http.Request) {
-	token, err := readTokenID(r)
+	token, err := readRefreshToken(r)
 	if err != nil {
 		handler.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
@@ -120,13 +125,14 @@ func (t *TokenHandler) RevokeAll(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		handler.HandleError(w, err, t.logger, func(e *usecase.Error) {
 			if e.Err == usecase.ErrTokenExpired {
-				deleteToken(w)
+				deleteRefreshToken(w)
 			}
 			handler.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
 		})
 		return
 	}
 
-	deleteToken(w)
+	deleteRefreshToken(w)
+	w.WriteHeader(200)
 	writeSuccess(w)
 }

@@ -54,11 +54,12 @@ func (u *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.WriteHeader(200)
 	writeSuccess(w)
 }
 
 func (u *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
-	token := readAuth(r)
+	token := readAccessToken(r)
 	fingerprint := readFingerprint(r)
 	userID, err := u.tokenUsecase.VerifyAccess(token, fingerprint)
 	if err != nil {
@@ -87,5 +88,6 @@ func (u *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.WriteHeader(200)
 	writeSuccess(w)
 }
