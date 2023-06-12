@@ -11,7 +11,6 @@ import (
 	"github.com/qsoulior/auth-server/internal/repo"
 	"github.com/qsoulior/auth-server/pkg/jwt"
 	"github.com/qsoulior/auth-server/pkg/uuid"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type TokenRepos struct {
@@ -41,17 +40,17 @@ func (t *token) VerifyAccess(token entity.AccessToken, userData []byte) (uuid.UU
 	var userID uuid.UUID
 	claims, err := t.parser.Parse(token)
 	if err != nil {
-		return userID, err
+		return userID, NewError(err, true)
 	}
 
 	userID, err = uuid.FromString(claims.Subject)
 	if err != nil {
-		return userID, ErrUserIDInvalid
+		return userID, NewError(ErrUserIDInvalid, true)
 	}
 
 	fp := fingerprint.New(userID, userData)
 	if err := fp.Verify(hash.FromHexString(claims.Fingerprint)); err != nil {
-		return userID, err
+		return userID, NewError(err, true)
 	}
 
 	return userID, nil
@@ -114,8 +113,8 @@ func (t *token) Authorize(data entity.User, fingerprint []byte) (entity.AccessTo
 		return "", nil, NewError(err, false)
 	}
 
-	if err := bcrypt.CompareHashAndPassword(user.Password, data.Password); err != nil {
-		return "", nil, NewError(ErrPasswordIncorrect, true)
+	if err := verifyPassword(user.Password, data.Password); err != nil {
+		return "", nil, err
 	}
 
 	tokens, err := t.repos.Token.GetByUser(context.Background(), user.ID)

@@ -20,12 +20,12 @@ const (
 
 func validateName(name string) error {
 	if length := len(name); length < 4 || length > 20 {
-		return ErrNameInvalid
+		return NewError(ErrNameInvalid, true)
 	}
 
 	for _, r := range name {
 		if !strings.ContainsRune(lowerChars+upperChars+digitChars+"_", r) {
-			return ErrNameInvalid
+			return NewError(ErrNameInvalid, true)
 		}
 	}
 
@@ -34,7 +34,7 @@ func validateName(name string) error {
 
 func validatePassword(password []byte) error {
 	if length := len(password); length < 8 || length > 72 {
-		return ErrPasswordInvalid
+		return NewError(ErrPasswordInvalid, true)
 	}
 
 	var lower, upper, digit, special bool
@@ -56,7 +56,28 @@ func validatePassword(password []byte) error {
 		}
 	}
 
-	return ErrPasswordInvalid
+	return NewError(ErrPasswordInvalid, true)
+}
+
+func hashPassword(password []byte, hashCost int) ([]byte, error) {
+	if err := validatePassword(password); err != nil {
+		return nil, err
+	}
+
+	hash, err := bcrypt.GenerateFromPassword(password, hashCost)
+	if err != nil {
+		return nil, NewError(err, false)
+	}
+
+	return hash, nil
+}
+
+func verifyPassword(hashedPassword []byte, password []byte) error {
+	if err := bcrypt.CompareHashAndPassword(hashedPassword, password); err != nil {
+		return NewError(ErrPasswordIncorrect, true)
+	}
+
+	return nil
 }
 
 type UserRepos struct {
@@ -77,27 +98,6 @@ func NewUser(repos UserRepos, params UserParams) *user {
 	return &user{repos, params}
 }
 
-func (u *user) hashPassword(password []byte) ([]byte, error) {
-	if err := validatePassword(password); err != nil {
-		return nil, NewError(err, true)
-	}
-
-	hash, err := bcrypt.GenerateFromPassword(password, u.params.HashCost)
-	if err != nil {
-		return nil, NewError(err, false)
-	}
-
-	return hash, nil
-}
-
-func (u *user) verifyPassword(hashedPassword, password []byte) error {
-	if err := bcrypt.CompareHashAndPassword(hashedPassword, password); err != nil {
-		return ErrPasswordIncorrect
-	}
-
-	return nil
-}
-
 func (u *user) Create(data entity.User) (*entity.User, error) {
 	_, err := u.repos.User.GetByName(context.Background(), data.Name)
 	if err == nil {
@@ -107,10 +107,10 @@ func (u *user) Create(data entity.User) (*entity.User, error) {
 	}
 
 	if err := validateName(data.Name); err != nil {
-		return nil, NewError(err, true)
+		return nil, err
 	}
 
-	hash, err := u.hashPassword(data.Password)
+	hash, err := hashPassword(data.Password, u.params.HashCost)
 	if err != nil {
 		return nil, err
 	}
@@ -143,8 +143,8 @@ func (u *user) Delete(id uuid.UUID, currentPassword []byte) error {
 		return err
 	}
 
-	if err = u.verifyPassword(user.Password, currentPassword); err != nil {
-		return NewError(err, true)
+	if err = verifyPassword(user.Password, currentPassword); err != nil {
+		return err
 	}
 
 	if err := u.repos.User.DeleteByID(context.Background(), user.ID); err != nil {
@@ -160,11 +160,11 @@ func (u *user) UpdatePassword(id uuid.UUID, currentPassword []byte, newPassword 
 		return err
 	}
 
-	if err = u.verifyPassword(user.Password, currentPassword); err != nil {
-		return NewError(err, true)
+	if err = verifyPassword(user.Password, currentPassword); err != nil {
+		return err
 	}
 
-	hashedPassword, err := u.hashPassword(newPassword)
+	hashedPassword, err := hashPassword(newPassword, u.params.HashCost)
 	if err != nil {
 		return err
 	}
