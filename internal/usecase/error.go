@@ -8,16 +8,14 @@ import (
 )
 
 var (
-	ErrUserExists           = errors.New("user already exists")
-	ErrUserNotExist         = errors.New("user does not exist")
-	ErrUserIDInvalid        = errors.New("user id is invalid")
-	ErrNameInvalid          = errors.New("name is invalid")
-	ErrPasswordInvalid      = errors.New("password is invalid")
-	ErrPasswordIncorrect    = errors.New("password is incorrect")
-	ErrTokenIncorrect       = errors.New("token is incorrect")
-	ErrTokenExpired         = errors.New("token is expired")
-	ErrFingerprintIncorrect = errors.New("fingerprint is incorrect")
-	ErrFingerprintInvalid   = errors.New("fingerprint is invalid")
+	ErrUserExists        = errors.New("user already exists")
+	ErrUserNotExist      = errors.New("user does not exist")
+	ErrUserIDInvalid     = errors.New("user id is invalid")
+	ErrNameInvalid       = errors.New("name is invalid")
+	ErrPasswordInvalid   = errors.New("password is invalid")
+	ErrPasswordIncorrect = errors.New("password is incorrect")
+	ErrTokenIncorrect    = errors.New("token is incorrect")
+	ErrTokenExpired      = errors.New("token is expired")
 )
 
 type Error struct {

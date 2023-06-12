@@ -90,6 +90,14 @@ func (u *user) hashPassword(password []byte) ([]byte, error) {
 	return hash, nil
 }
 
+func (u *user) verifyPassword(hashedPassword, password []byte) error {
+	if err := bcrypt.CompareHashAndPassword(hashedPassword, password); err != nil {
+		return ErrPasswordIncorrect
+	}
+
+	return nil
+}
+
 func (u *user) Create(data entity.User) (*entity.User, error) {
 	_, err := u.repos.User.GetByName(context.Background(), data.Name)
 	if err == nil {
@@ -129,10 +137,14 @@ func (u *user) Get(id uuid.UUID) (*entity.User, error) {
 	return user, nil
 }
 
-func (u *user) Delete(id uuid.UUID) error {
+func (u *user) Delete(id uuid.UUID, currentPassword []byte) error {
 	user, err := u.Get(id)
 	if err != nil {
 		return err
+	}
+
+	if err = u.verifyPassword(user.Password, currentPassword); err != nil {
+		return NewError(err, true)
 	}
 
 	if err := u.repos.User.DeleteByID(context.Background(), user.ID); err != nil {
@@ -142,18 +154,22 @@ func (u *user) Delete(id uuid.UUID) error {
 	return nil
 }
 
-func (u *user) UpdatePassword(id uuid.UUID, password []byte) error {
+func (u *user) UpdatePassword(id uuid.UUID, currentPassword []byte, newPassword []byte) error {
 	user, err := u.Get(id)
 	if err != nil {
 		return err
 	}
 
-	hash, err := u.hashPassword(password)
+	if err = u.verifyPassword(user.Password, currentPassword); err != nil {
+		return NewError(err, true)
+	}
+
+	hashedPassword, err := u.hashPassword(newPassword)
 	if err != nil {
 		return err
 	}
 
-	if err = u.repos.User.UpdatePassword(context.Background(), user.ID, hash); err != nil {
+	if err = u.repos.User.UpdatePassword(context.Background(), user.ID, hashedPassword); err != nil {
 		return NewError(err, false)
 	}
 

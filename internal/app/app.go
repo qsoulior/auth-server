@@ -6,7 +6,6 @@ import (
 
 	"github.com/qsoulior/auth-server/internal/repo"
 	"github.com/qsoulior/auth-server/internal/usecase"
-	"github.com/qsoulior/auth-server/internal/usecase/proxy"
 	"github.com/qsoulior/auth-server/pkg/db"
 	"github.com/qsoulior/auth-server/pkg/log"
 )
@@ -38,20 +37,17 @@ func Run(cfg *Config, logger log.Logger) error {
 		usecase.UserParams{cfg.Bcrypt.Cost},
 	)
 	logger.Info("user usecase created")
-	userProxy := proxy.NewUser(userUseCase, parser)
-	logger.Info("user proxy created")
 
 	tokenUseCase := usecase.NewToken(
 		usecase.TokenRepos{userRepo, tokenRepo, roleRepo},
 		usecase.TokenParams{cfg.JWT.Age, cfg.RT.Age, cfg.RT.Cap},
 		builder,
+		parser,
 	)
 	logger.Info("token usecase created")
-	tokenProxy := proxy.NewToken(tokenUseCase)
-	logger.Info("token proxy created")
 
 	// server listening
-	server := NewServer(cfg, logger, userProxy, tokenProxy)
+	server := NewServer(cfg, logger, userUseCase, tokenUseCase)
 	logger.Info("server created with address " + server.Addr)
 	return fmt.Errorf("server down: %w", server.ListenAndServe())
 }

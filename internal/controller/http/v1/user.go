@@ -4,23 +4,18 @@ import (
 	"encoding/json"
 	"net/http"
 
-	controller "github.com/qsoulior/auth-server/internal/controller/http"
+	handler "github.com/qsoulior/auth-server/internal/controller/http"
 	"github.com/qsoulior/auth-server/internal/usecase"
-	"github.com/qsoulior/auth-server/internal/usecase/proxy"
 	"github.com/qsoulior/auth-server/pkg/log"
 )
 
-type user struct {
-	usecase proxy.User
-	logger  log.Logger
+type UserHandler struct {
+	userUsecase  usecase.User
+	tokenUsecase usecase.Token
+	logger       log.Logger
 }
 
-func HandleUser(usecase proxy.User, mux *http.ServeMux, logger log.Logger) {
-	user := &user{usecase, logger}
-	mux.Handle(api+"/user/", http.StripPrefix(api+"/user", user))
-}
-
-func (u *user) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (u *UserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
 	case "/":
 		switch r.Method {
@@ -31,30 +26,30 @@ func (u *user) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case http.MethodDelete:
 			break
 		default:
-			controller.MethodNotAllowed(w, r, []string{http.MethodPost, http.MethodGet, http.MethodDelete})
+			handler.MethodNotAllowed(w, r, []string{http.MethodPost, http.MethodGet, http.MethodDelete})
 		}
 	case "/password":
 		if r.Method == http.MethodPut {
 			u.ChangePassword(w, r)
 		} else {
-			controller.MethodNotAllowed(w, r, []string{http.MethodPut})
+			handler.MethodNotAllowed(w, r, []string{http.MethodPut})
 		}
 	default:
-		controller.NotFound(w, r)
+		handler.NotFound(w, r)
 	}
 }
 
-func (u *user) SignUp(w http.ResponseWriter, r *http.Request) {
+func (u *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 	user, err := readUser(r)
 	if err != nil {
-		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
+		handler.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	_, err = u.usecase.Create(user)
+	_, err = u.userUsecase.Create(user)
 	if err != nil {
-		controller.HandleError(w, err, u.logger, func(e *usecase.Error) {
-			controller.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
+		handler.HandleError(w, err, u.logger, func(e *usecase.Error) {
+			handler.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
 		})
 		return
 	}
@@ -62,10 +57,14 @@ func (u *user) SignUp(w http.ResponseWriter, r *http.Request) {
 	writeSuccess(w)
 }
 
-func (u *user) ChangePassword(w http.ResponseWriter, r *http.Request) {
-	token, err := readAuth(r)
+func (u *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	token := readAuth(r)
+	fingerprint := readFingerprint(r)
+	userID, err := u.tokenUsecase.VerifyAccess(token, fingerprint)
 	if err != nil {
-		controller.ErrorJSON(w, err.Error(), http.StatusBadRequest)
+		handler.HandleError(w, err, u.logger, func(e *usecase.Error) {
+			handler.ErrorJSON(w, e.Err.Error(), http.StatusForbidden)
+		})
 		return
 	}
 
@@ -76,15 +75,14 @@ func (u *user) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	d := json.NewDecoder(r.Body)
 	err = d.Decode(&body)
 	if err != nil {
-		controller.ErrorJSON(w, "decoding error "+err.Error(), http.StatusBadRequest)
+		handler.ErrorJSON(w, "decoding error "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	fingerprint := readFingerprint(r)
-	err = u.usecase.UpdatePassword([]byte(body.NewPassword), []byte(body.CurrentPassword), token, fingerprint)
+	err = u.userUsecase.UpdatePassword(userID, []byte(body.CurrentPassword), []byte(body.NewPassword))
 	if err != nil {
-		controller.HandleError(w, err, u.logger, func(e *usecase.Error) {
-			controller.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
+		handler.HandleError(w, err, u.logger, func(e *usecase.Error) {
+			handler.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
 		})
 		return
 	}

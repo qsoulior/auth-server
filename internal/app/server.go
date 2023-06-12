@@ -4,20 +4,18 @@ import (
 	"fmt"
 	"net/http"
 
-	controller "github.com/qsoulior/auth-server/internal/controller/http"
+	api "github.com/qsoulior/auth-server/internal/controller/http"
 	v1 "github.com/qsoulior/auth-server/internal/controller/http/v1"
-	"github.com/qsoulior/auth-server/internal/usecase/proxy"
+	"github.com/qsoulior/auth-server/internal/usecase"
 	"github.com/qsoulior/auth-server/pkg/log"
 )
 
-func NewServer(cfg *Config, logger log.Logger, user proxy.User, token proxy.Token) *http.Server {
-
+func NewServer(cfg *Config, logger log.Logger, user usecase.User, token usecase.Token) *http.Server {
 	mux := http.NewServeMux()
-	mux.Handle("/", controller.Index())
-	v1.HandleUser(user, mux, logger)
-	v1.HandleToken(token, mux, logger)
+	mux.Handle("/", api.Handler())
+	mux.Handle("/v1/", http.StripPrefix("/v1", v1.Handler(user, token, logger)))
 
-	handler := controller.LoggerMiddleware(controller.ContentTypeMiddleware(mux, "application/json"), logger)
+	handler := api.LoggerMiddleware(api.ContentTypeMiddleware(mux, "application/json"), logger)
 
 	host := ""
 	if cfg.Env == EnvDev {

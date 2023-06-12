@@ -9,18 +9,26 @@ import (
 	"time"
 
 	"github.com/qsoulior/auth-server/internal/entity"
+	"github.com/qsoulior/auth-server/internal/usecase"
+	"github.com/qsoulior/auth-server/pkg/log"
 	"github.com/qsoulior/auth-server/pkg/uuid"
 )
 
-const api = "/api/v1"
+func Handler(user usecase.User, token usecase.Token, logger log.Logger) http.Handler {
+	mux := http.NewServeMux()
+	mux.Handle("/user/", http.StripPrefix("/user", &UserHandler{user, token, logger}))
+	mux.Handle("/token/", http.StripPrefix("/token", &TokenHandler{token, logger}))
 
-func readAuth(r *http.Request) (entity.AccessToken, error) {
+	return mux
+}
+
+func readAuth(r *http.Request) entity.AccessToken {
 	authorization := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
 	if len(authorization) < 2 || authorization[0] != "Bearer" {
-		return "", errors.New("invalid authorization header")
+		return ""
 	}
 
-	return authorization[1], nil
+	return authorization[1]
 }
 
 func readUser(r *http.Request) (entity.User, error) {
