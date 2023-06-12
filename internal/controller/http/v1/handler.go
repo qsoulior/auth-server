@@ -17,7 +17,7 @@ import (
 func Handler(user usecase.User, token usecase.Token, logger log.Logger) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/user/", http.StripPrefix("/user", &UserHandler{user, token, logger}))
-	mux.Handle("/token/", http.StripPrefix("/token", &TokenHandler{token, logger}))
+	mux.Handle("/token/", http.StripPrefix("/token", &TokenHandler{user, token, logger}))
 
 	return mux
 }

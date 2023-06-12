@@ -8,15 +8,16 @@ import (
 type User interface {
 	Create(data entity.User) (*entity.User, error)
 	Get(id uuid.UUID) (*entity.User, error)
+	Authenticate(data entity.User) (*entity.User, error)
 	Delete(id uuid.UUID, currentPassword []byte) error
 	UpdatePassword(id uuid.UUID, currentPassword []byte, newPassword []byte) error
 }
 
 type Token interface {
-	VerifyAccess(token entity.AccessToken, fingerprint []byte) (uuid.UUID, error)
-	Authorize(data entity.User, fingerprint []byte) (entity.AccessToken, *entity.RefreshToken, error)
-	Refresh(id uuid.UUID, fingerprint []byte) (entity.AccessToken, *entity.RefreshToken, error)
+	Create(userID uuid.UUID, userData []byte) (entity.AccessToken, *entity.RefreshToken, error)
+	Refresh(id uuid.UUID, userData []byte) (entity.AccessToken, *entity.RefreshToken, error)
 	Get(id uuid.UUID) (*entity.RefreshToken, error)
-	Delete(id uuid.UUID, fingerprint []byte) error
-	DeleteAll(id uuid.UUID, fingerprint []byte) error
+	Authorize(token entity.AccessToken, userData []byte) (uuid.UUID, error)
+	Delete(id uuid.UUID, userData []byte) error
+	DeleteAll(id uuid.UUID, userData []byte) error
 }

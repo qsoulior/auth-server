@@ -61,7 +61,7 @@ func (u *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 func (u *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	token := readAccessToken(r)
 	fingerprint := readFingerprint(r)
-	userID, err := u.tokenUsecase.VerifyAccess(token, fingerprint)
+	userID, err := u.tokenUsecase.Authorize(token, fingerprint)
 	if err != nil {
 		handler.HandleError(w, err, u.logger, func(e *usecase.Error) {
 			handler.ErrorJSON(w, e.Err.Error(), http.StatusForbidden)

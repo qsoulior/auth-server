@@ -39,7 +39,7 @@ func Run(cfg *Config, logger log.Logger) error {
 	logger.Info("user usecase created")
 
 	tokenUseCase := usecase.NewToken(
-		usecase.TokenRepos{userRepo, tokenRepo, roleRepo},
+		usecase.TokenRepos{tokenRepo, roleRepo},
 		usecase.TokenParams{cfg.JWT.Age, cfg.RT.Age, cfg.RT.Cap},
 		builder,
 		parser,

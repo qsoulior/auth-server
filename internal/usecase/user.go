@@ -137,6 +137,22 @@ func (u *user) Get(id uuid.UUID) (*entity.User, error) {
 	return user, nil
 }
 
+func (u *user) Authenticate(data entity.User) (*entity.User, error) {
+	user, err := u.repos.User.GetByName(context.Background(), data.Name)
+	if err != nil {
+		if errors.Is(err, repo.ErrNoRows) {
+			return nil, NewError(ErrUserNotExist, true)
+		}
+		return nil, NewError(err, false)
+	}
+
+	if err := verifyPassword(user.Password, data.Password); err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
 func (u *user) Delete(id uuid.UUID, currentPassword []byte) error {
 	user, err := u.Get(id)
 	if err != nil {

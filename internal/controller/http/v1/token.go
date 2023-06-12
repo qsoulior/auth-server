@@ -9,6 +9,7 @@ import (
 )
 
 type TokenHandler struct {
+	userUsecase  usecase.User
 	tokenUsecase usecase.Token
 	logger       log.Logger
 }
@@ -45,14 +46,22 @@ func (t *TokenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (t *TokenHandler) Authorize(w http.ResponseWriter, r *http.Request) {
-	user, err := readUser(r)
+	data, err := readUser(r)
 	if err != nil {
 		handler.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	fingerprint := readFingerprint(r)
 
-	accessToken, refreshToken, err := t.tokenUsecase.Authorize(user, fingerprint)
+	user, err := t.userUsecase.Authenticate(data)
+	if err != nil {
+		handler.HandleError(w, err, t.logger, func(e *usecase.Error) {
+			handler.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
+		})
+		return
+	}
+
+	accessToken, refreshToken, err := t.tokenUsecase.Create(user.ID, fingerprint)
 	if err != nil {
 		handler.HandleError(w, err, t.logger, func(e *usecase.Error) {
 			handler.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
