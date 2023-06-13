@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	ErrIncorrect = errors.New("uuid: incorrect UUID")
+	ErrInvalid = errors.New("uuid: invalid UUID")
 )
 
 type UUID [16]byte
@@ -40,33 +40,34 @@ func (u *UUID) Scan(src any) error {
 	if s, ok := src.(string); ok {
 		uuid, err := FromString(s)
 		if err != nil {
-			return ErrIncorrect
+			return ErrInvalid
 		}
 		*u = uuid
 		return nil
 	}
-	return ErrIncorrect
+	return ErrInvalid
 }
 
 func FromString(s string) (UUID, error) {
-	var uuid UUID
 	if len(s) != 36 || s[8] != '-' || s[13] != '-' || s[18] != '-' || s[23] != '-' {
-		return uuid, ErrIncorrect
+		return UUID{}, ErrInvalid
 	}
 
 	s = strings.ReplaceAll(s, "-", "")
 
+	var uuid UUID
 	if _, err := hex.Decode(uuid[:], []byte(s)); err != nil {
-		return uuid, ErrIncorrect
+		return UUID{}, ErrInvalid
 	}
 	return uuid, nil
 }
 
 func FromBytes(b []byte) (UUID, error) {
-	var uuid UUID
 	if len(b) != 16 {
-		return uuid, ErrIncorrect
+		return UUID{}, ErrInvalid
 	}
+
+	var uuid UUID
 	copy(uuid[:], b)
 	return uuid, nil
 }
