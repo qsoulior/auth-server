@@ -35,13 +35,14 @@ func Run(cfg *Config, logger log.Logger) error {
 	userUseCase := usecase.NewUser(
 		usecase.UserRepos{userRepo, tokenRepo},
 		usecase.UserParams{cfg.Bcrypt.Cost},
+		parser,
 	)
 	logger.Info("user usecase created")
 
 	tokenUseCase := usecase.NewToken(
 		usecase.TokenRepos{tokenRepo, roleRepo},
-		usecase.TokenJWT{builder, parser},
 		usecase.TokenParams{cfg.AT.Age, cfg.RT.Age, cfg.RT.Cap},
+		builder,
 	)
 	logger.Info("token usecase created")
 

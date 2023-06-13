@@ -6,7 +6,10 @@ import (
 	"strings"
 
 	"github.com/qsoulior/auth-server/internal/entity"
+	"github.com/qsoulior/auth-server/internal/pkg/fingerprint"
+	"github.com/qsoulior/auth-server/internal/pkg/hash"
 	"github.com/qsoulior/auth-server/internal/repo"
+	"github.com/qsoulior/auth-server/pkg/jwt"
 	"github.com/qsoulior/auth-server/pkg/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -92,10 +95,11 @@ type UserParams struct {
 type user struct {
 	repos  UserRepos
 	params UserParams
+	jwt    jwt.Parser
 }
 
-func NewUser(repos UserRepos, params UserParams) *user {
-	return &user{repos, params}
+func NewUser(repos UserRepos, params UserParams, jwt jwt.Parser) *user {
+	return &user{repos, params, jwt}
 }
 
 func (u *user) Create(data entity.User) (*entity.User, error) {
@@ -137,20 +141,39 @@ func (u *user) Get(id uuid.UUID) (*entity.User, error) {
 	return user, nil
 }
 
-func (u *user) Authenticate(data entity.User) (*entity.User, error) {
+func (u *user) Authenticate(data entity.User) (uuid.UUID, error) {
 	user, err := u.repos.User.GetByName(context.Background(), data.Name)
 	if err != nil {
 		if errors.Is(err, repo.ErrNoRows) {
-			return nil, NewError(ErrUserNotExist, true)
+			return uuid.UUID{}, NewError(ErrUserNotExist, true)
 		}
-		return nil, NewError(err, false)
+		return uuid.UUID{}, NewError(err, false)
 	}
 
 	if err := verifyPassword(user.Password, data.Password); err != nil {
-		return nil, err
+		return uuid.UUID{}, err
 	}
 
-	return user, nil
+	return user.ID, nil
+}
+
+func (u *user) Authorize(token entity.AccessToken, fp []byte) (uuid.UUID, error) {
+	claims, err := u.jwt.Parse(string(token))
+	if err != nil {
+		return uuid.UUID{}, NewError(err, true)
+	}
+
+	userID, err := uuid.FromString(claims.Subject)
+	if err != nil {
+		return uuid.UUID{}, NewError(ErrUserIDInvalid, true)
+	}
+
+	fpObj := fingerprint.New(userID, fp)
+	if err := fpObj.Verify(hash.FromHexString(claims.Fingerprint)); err != nil {
+		return uuid.UUID{}, NewError(err, true)
+	}
+
+	return userID, nil
 }
 
 func (u *user) Delete(id uuid.UUID, currentPassword []byte) error {

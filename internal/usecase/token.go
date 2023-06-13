@@ -7,7 +7,6 @@ import (
 
 	"github.com/qsoulior/auth-server/internal/entity"
 	"github.com/qsoulior/auth-server/internal/pkg/fingerprint"
-	"github.com/qsoulior/auth-server/internal/pkg/hash"
 	"github.com/qsoulior/auth-server/internal/repo"
 	"github.com/qsoulior/auth-server/pkg/jwt"
 	"github.com/qsoulior/auth-server/pkg/uuid"
@@ -18,11 +17,6 @@ type TokenRepos struct {
 	Role  repo.Role
 }
 
-type TokenJWT struct {
-	jwt.Builder
-	jwt.Parser
-}
-
 type TokenParams struct {
 	AccessAge  int
 	RefreshAge int
@@ -31,27 +25,27 @@ type TokenParams struct {
 
 type token struct {
 	repos  TokenRepos
-	jwt    TokenJWT
 	params TokenParams
+	jwt    jwt.Builder
 }
 
-func NewToken(repos TokenRepos, jwt TokenJWT, params TokenParams) *token {
-	return &token{repos, jwt, params}
+func NewToken(repos TokenRepos, params TokenParams, jwt jwt.Builder) *token {
+	return &token{repos, params, jwt}
 }
 
-func (t *token) verify(token *entity.RefreshToken, userData []byte) error {
-	fp := fingerprint.New(token.UserID, userData)
-	if err := fp.Verify(token.Fingerprint); err != nil {
+func (t *token) verify(token *entity.RefreshToken, fp []byte) error {
+	fpObj := fingerprint.New(token.UserID, fp)
+	if err := fpObj.Verify(token.Fingerprint); err != nil {
 		return NewError(err, true)
 	}
 
 	return nil
 }
 
-func (t *token) create(userID uuid.UUID, userData []byte) (entity.AccessToken, *entity.RefreshToken, error) {
+func (t *token) create(userID uuid.UUID, fp []byte) (entity.AccessToken, *entity.RefreshToken, error) {
 	// fingerprint
-	fp := fingerprint.New(userID, userData)
-	fpHash, err := fp.Hash()
+	fpObj := fingerprint.New(userID, fp)
+	fpHash, err := fpObj.Hash()
 	if err != nil {
 		return "", nil, NewError(err, true)
 	}
@@ -87,7 +81,7 @@ func (t *token) create(userID uuid.UUID, userData []byte) (entity.AccessToken, *
 	return entity.AccessToken(at), rt, nil
 }
 
-func (t *token) Create(userID uuid.UUID, userData []byte) (entity.AccessToken, *entity.RefreshToken, error) {
+func (t *token) Create(userID uuid.UUID, fp []byte) (entity.AccessToken, *entity.RefreshToken, error) {
 	tokens, err := t.repos.Token.GetByUser(context.Background(), userID)
 	if err != nil {
 		return "", nil, NewError(err, false)
@@ -99,7 +93,7 @@ func (t *token) Create(userID uuid.UUID, userData []byte) (entity.AccessToken, *
 		}
 	}
 
-	accessToken, refreshToken, err := t.create(userID, userData)
+	accessToken, refreshToken, err := t.create(userID, fp)
 	if err != nil {
 		return "", nil, err
 	}
@@ -107,13 +101,13 @@ func (t *token) Create(userID uuid.UUID, userData []byte) (entity.AccessToken, *
 	return accessToken, refreshToken, nil
 }
 
-func (t *token) Refresh(id uuid.UUID, userData []byte) (entity.AccessToken, *entity.RefreshToken, error) {
+func (t *token) Refresh(id uuid.UUID, fp []byte) (entity.AccessToken, *entity.RefreshToken, error) {
 	token, err := t.Get(id)
 	if err != nil {
 		return "", nil, err
 	}
 
-	if err := t.verify(token, userData); err != nil {
+	if err := t.verify(token, fp); err != nil {
 		return "", nil, err
 	}
 
@@ -144,33 +138,13 @@ func (t *token) Get(id uuid.UUID) (*entity.RefreshToken, error) {
 	return token, nil
 }
 
-func (t *token) Authorize(token entity.AccessToken, userData []byte) (uuid.UUID, error) {
-	var userID uuid.UUID
-	claims, err := t.jwt.Parse(string(token))
-	if err != nil {
-		return userID, NewError(err, true)
-	}
-
-	userID, err = uuid.FromString(claims.Subject)
-	if err != nil {
-		return userID, NewError(ErrUserIDInvalid, true)
-	}
-
-	fp := fingerprint.New(userID, userData)
-	if err := fp.Verify(hash.FromHexString(claims.Fingerprint)); err != nil {
-		return userID, NewError(err, true)
-	}
-
-	return userID, nil
-}
-
-func (t *token) Delete(id uuid.UUID, userData []byte) error {
+func (t *token) Delete(id uuid.UUID, fp []byte) error {
 	token, err := t.Get(id)
 	if err != nil {
 		return err
 	}
 
-	if err := t.verify(token, userData); err != nil {
+	if err := t.verify(token, fp); err != nil {
 		return err
 	}
 
@@ -181,13 +155,13 @@ func (t *token) Delete(id uuid.UUID, userData []byte) error {
 	return nil
 }
 
-func (t *token) DeleteAll(id uuid.UUID, userData []byte) error {
+func (t *token) DeleteAll(id uuid.UUID, fp []byte) error {
 	token, err := t.Get(id)
 	if err != nil {
 		return err
 	}
 
-	if err := t.verify(token, userData); err != nil {
+	if err := t.verify(token, fp); err != nil {
 		return err
 	}
 
