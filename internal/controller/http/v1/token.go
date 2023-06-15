@@ -3,49 +3,29 @@ package v1
 import (
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	api "github.com/qsoulior/auth-server/internal/controller/http"
 	"github.com/qsoulior/auth-server/internal/usecase"
 	"github.com/qsoulior/auth-server/pkg/log"
 )
 
-type TokenHandler struct {
+type token struct {
 	userUsecase  usecase.User
 	tokenUsecase usecase.Token
 	logger       log.Logger
 }
 
-func (t *TokenHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	switch r.URL.Path {
-	case "/":
-		if r.Method == http.MethodPost {
-			t.Create(w, r)
-		} else {
-			api.MethodNotAllowed(w, r, []string{http.MethodPost})
-		}
-	case "/refresh":
-		if r.Method == http.MethodPost {
-			t.Refresh(w, r)
-		} else {
-			api.MethodNotAllowed(w, r, []string{http.MethodPost})
-		}
-	case "/revoke":
-		if r.Method == http.MethodPost {
-			t.Revoke(w, r)
-		} else {
-			api.MethodNotAllowed(w, r, []string{http.MethodPost})
-		}
-	case "/revoke-all":
-		if r.Method == http.MethodPost {
-			t.RevokeAll(w, r)
-		} else {
-			api.MethodNotAllowed(w, r, []string{http.MethodPost})
-		}
-	default:
-		api.NotFound(w, r)
-	}
+func TokenMux(userUsecase usecase.User, tokenUsecase usecase.Token, logger log.Logger) http.Handler {
+	t := token{userUsecase, tokenUsecase, logger}
+	mux := chi.NewMux()
+	mux.Post("/", t.Create)
+	mux.Post("/refresh", t.Refresh)
+	mux.Post("/revoke", t.Revoke)
+	mux.Post("/revoke-all", t.RevokeAll)
+	return mux
 }
 
-func (t *TokenHandler) Create(w http.ResponseWriter, r *http.Request) {
+func (t *token) Create(w http.ResponseWriter, r *http.Request) {
 	data, err := readUser(r)
 	if err != nil {
 		api.ErrorJSON(w, err.Error(), http.StatusBadRequest)
@@ -55,7 +35,7 @@ func (t *TokenHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := t.userUsecase.Authenticate(data)
 	if err != nil {
-		api.HandleError(w, err, t.logger, func(e *usecase.Error) {
+		api.HandleError(err, func(e *usecase.Error) {
 			api.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
 		})
 		return
@@ -63,7 +43,7 @@ func (t *TokenHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	accessToken, refreshToken, err := t.tokenUsecase.Create(userID, fingerprint)
 	if err != nil {
-		api.HandleError(w, err, t.logger, func(e *usecase.Error) {
+		api.HandleError(err, func(e *usecase.Error) {
 			api.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
 		})
 		return
@@ -74,7 +54,7 @@ func (t *TokenHandler) Create(w http.ResponseWriter, r *http.Request) {
 	writeAccessToken(w, accessToken)
 }
 
-func (t *TokenHandler) Refresh(w http.ResponseWriter, r *http.Request) {
+func (t *token) Refresh(w http.ResponseWriter, r *http.Request) {
 	token, err := readRefreshToken(r)
 	if err != nil {
 		api.ErrorJSON(w, err.Error(), http.StatusBadRequest)
@@ -84,7 +64,7 @@ func (t *TokenHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 
 	accessToken, refreshToken, err := t.tokenUsecase.Refresh(token, fingerprint)
 	if err != nil {
-		api.HandleError(w, err, t.logger, func(e *usecase.Error) {
+		api.HandleError(err, func(e *usecase.Error) {
 			if e.Err == usecase.ErrTokenExpired {
 				deleteRefreshToken(w)
 			}
@@ -98,7 +78,7 @@ func (t *TokenHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	writeAccessToken(w, accessToken)
 }
 
-func (t *TokenHandler) Revoke(w http.ResponseWriter, r *http.Request) {
+func (t *token) Revoke(w http.ResponseWriter, r *http.Request) {
 	token, err := readRefreshToken(r)
 	if err != nil {
 		api.ErrorJSON(w, err.Error(), http.StatusBadRequest)
@@ -108,7 +88,7 @@ func (t *TokenHandler) Revoke(w http.ResponseWriter, r *http.Request) {
 
 	err = t.tokenUsecase.Delete(token, fingerprint)
 	if err != nil {
-		api.HandleError(w, err, t.logger, func(e *usecase.Error) {
+		api.HandleError(err, func(e *usecase.Error) {
 			if e.Err == usecase.ErrTokenExpired {
 				deleteRefreshToken(w)
 			}
@@ -122,7 +102,7 @@ func (t *TokenHandler) Revoke(w http.ResponseWriter, r *http.Request) {
 	writeSuccess(w)
 }
 
-func (t *TokenHandler) RevokeAll(w http.ResponseWriter, r *http.Request) {
+func (t *token) RevokeAll(w http.ResponseWriter, r *http.Request) {
 	token, err := readRefreshToken(r)
 	if err != nil {
 		api.ErrorJSON(w, err.Error(), http.StatusBadRequest)
@@ -132,7 +112,7 @@ func (t *TokenHandler) RevokeAll(w http.ResponseWriter, r *http.Request) {
 
 	err = t.tokenUsecase.DeleteAll(token, fingerprint)
 	if err != nil {
-		api.HandleError(w, err, t.logger, func(e *usecase.Error) {
+		api.HandleError(err, func(e *usecase.Error) {
 			if e.Err == usecase.ErrTokenExpired {
 				deleteRefreshToken(w)
 			}

@@ -8,19 +8,28 @@ import (
 	"github.com/qsoulior/auth-server/pkg/log"
 )
 
-func ContentTypeMiddleware(handler http.Handler, contentType string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ct := r.Header.Get("Content-Type")
-		if i := strings.IndexRune(ct, ';'); i != -1 {
-			ct = ct[0:i]
-		}
+type Middleware func(next http.Handler) http.Handler
 
-		if ct != contentType {
-			UnsupportedMediaType(w, r, contentType)
-			return
-		}
-		handler.ServeHTTP(w, r)
-	})
+func ContentTypeMiddleware(contentTypes ...string) Middleware {
+	ctSet := make(map[string]struct{}, len(contentTypes))
+	for _, ct := range contentTypes {
+		ctSet[ct] = struct{}{}
+	}
+
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ct := r.Header.Get("Content-Type")
+			if i := strings.IndexRune(ct, ';'); i != -1 {
+				ct = ct[0:i]
+			}
+
+			if _, ok := ctSet[ct]; ok {
+				next.ServeHTTP(w, r)
+				return
+			}
+			UnsupportedMediaType(w, r, contentTypes)
+		})
+	}
 }
 
 type loggerWriter struct {
@@ -40,11 +49,27 @@ func (w *loggerWriter) WriteHeader(statusCode int) {
 	w.ResponseWriter.WriteHeader(statusCode)
 }
 
-func LoggerMiddleware(handler http.Handler, logger log.Logger) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		writer := &loggerWriter{w, 200, 0}
-		start := time.Now()
-		handler.ServeHTTP(writer, r)
-		logger.Info("\"%s %s %s\" %d %d %s", r.Method, r.URL, r.Proto, writer.statusCode, writer.size, time.Since(start))
-	})
+func LoggerMiddleware(logger log.Logger) Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			writer := &loggerWriter{w, 200, 0}
+			start := time.Now()
+			next.ServeHTTP(writer, r)
+			logger.Info("\"%s %s %s\" %d %d %s", r.Method, r.URL, r.Proto, writer.statusCode, writer.size, time.Since(start))
+		})
+	}
+}
+
+func RecovererMiddleware(logger log.Logger) Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			defer func() {
+				if r := recover(); r != nil {
+					InternalServerError(w)
+					logger.Error("%s", r)
+				}
+			}()
+			next.ServeHTTP(w, r)
+		})
+	}
 }

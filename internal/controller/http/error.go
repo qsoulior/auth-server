@@ -3,11 +3,10 @@ package http
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/qsoulior/auth-server/internal/usecase"
-	"github.com/qsoulior/auth-server/pkg/log"
 )
 
 func ErrorJSON(w http.ResponseWriter, error string, code int) {
@@ -20,13 +19,12 @@ func ErrorJSON(w http.ResponseWriter, error string, code int) {
 	})
 }
 
-func MethodNotAllowed(w http.ResponseWriter, r *http.Request, methods []string) {
-	w.Header().Set("Allow", strings.Join(methods, ", "))
+func MethodNotAllowed(w http.ResponseWriter, r *http.Request) {
 	ErrorJSON(w, r.Method+" not allowed", http.StatusMethodNotAllowed)
 }
 
-func UnsupportedMediaType(w http.ResponseWriter, r *http.Request, contentType string) {
-	ErrorJSON(w, "content type must be "+contentType, http.StatusUnsupportedMediaType)
+func UnsupportedMediaType(w http.ResponseWriter, r *http.Request, contentTypes []string) {
+	ErrorJSON(w, fmt.Sprintf("content type must be one of %v", contentTypes), http.StatusUnsupportedMediaType)
 }
 
 func NotFound(w http.ResponseWriter, r *http.Request) {
@@ -37,12 +35,11 @@ func InternalServerError(w http.ResponseWriter) {
 	ErrorJSON(w, "internal server error", http.StatusInternalServerError)
 }
 
-func HandleError(w http.ResponseWriter, err error, logger log.Logger, fn func(e *usecase.Error)) {
+func HandleError(err error, fn func(e *usecase.Error)) {
 	var e *usecase.Error
 	if errors.As(err, &e) && e.External {
 		fn(e)
 		return
 	}
-	InternalServerError(w)
-	logger.Error("%s", err)
+	panic(err)
 }

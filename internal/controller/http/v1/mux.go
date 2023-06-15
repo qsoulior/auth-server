@@ -8,17 +8,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/qsoulior/auth-server/internal/entity"
 	"github.com/qsoulior/auth-server/internal/usecase"
 	"github.com/qsoulior/auth-server/pkg/log"
 	"github.com/qsoulior/auth-server/pkg/uuid"
 )
 
-func Handler(user usecase.User, token usecase.Token, logger log.Logger) http.Handler {
-	mux := http.NewServeMux()
-	mux.Handle("/user/", http.StripPrefix("/user", &UserHandler{user, logger}))
-	mux.Handle("/token/", http.StripPrefix("/token", &TokenHandler{user, token, logger}))
-
+func Mux(user usecase.User, token usecase.Token, logger log.Logger) http.Handler {
+	mux := chi.NewMux()
+	mux.Mount("/user", UserMux(user, logger))
+	mux.Mount("/token", TokenMux(user, token, logger))
 	return mux
 }
 
