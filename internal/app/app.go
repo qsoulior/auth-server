@@ -26,28 +26,27 @@ func Run(cfg *Config, logger log.Logger) error {
 	}
 	logger.Info("jwt module initialized")
 
-	// repos initialization
+	// repositories initialization
 	userRepo := repo.NewUserPostgres(postgres)
 	tokenRepo := repo.NewTokenPostgres(postgres)
 	roleRepo := repo.NewRolePostgres(postgres)
+	logger.Info("repositories initialized")
 
-	// usecases initialization
-	userUseCase := usecase.NewUser(
-		usecase.UserRepos{userRepo, tokenRepo},
+	// use cases initialization
+	userUС := usecase.NewUser(
+		usecase.UserRepos{userRepo},
 		usecase.UserParams{cfg.Bcrypt.Cost},
-		parser,
 	)
-	logger.Info("user usecase created")
-
-	tokenUseCase := usecase.NewToken(
+	tokenUС := usecase.NewToken(
 		usecase.TokenRepos{tokenRepo, roleRepo},
 		usecase.TokenParams{cfg.AT.Age, cfg.RT.Age, cfg.RT.Cap},
 		builder,
 	)
-	logger.Info("token usecase created")
+	authUС := usecase.NewAuth(parser)
+	logger.Info("use cases initialized")
 
 	// server listening
-	server := NewServer(cfg, logger, userUseCase, tokenUseCase)
+	server := NewServer(cfg, logger, userUС, tokenUС, authUС)
 	logger.Info("server created with address " + server.Addr)
 	return fmt.Errorf("server down: %w", server.ListenAndServe())
 }

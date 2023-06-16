@@ -4,25 +4,13 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
 	api "github.com/qsoulior/auth-server/internal/controller/http"
 	"github.com/qsoulior/auth-server/internal/usecase"
-	"github.com/qsoulior/auth-server/pkg/log"
 	"github.com/qsoulior/auth-server/pkg/uuid"
 )
 
 type user struct {
-	userUsecase usecase.User
-	logger      log.Logger
-}
-
-func UserMux(userUsecase usecase.User, logger log.Logger) http.Handler {
-	u := user{userUsecase, logger}
-	auth := AuthMiddleware(userUsecase, logger)
-	mux := chi.NewMux()
-	mux.Post("/", u.Create)
-	mux.With(auth).Put("/password", u.UpdatePassword)
-	return mux
+	userUC usecase.User
 }
 
 func (u *user) Create(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +20,7 @@ func (u *user) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = u.userUsecase.Create(user)
+	_, err = u.userUC.Create(user)
 	if err != nil {
 		api.HandleError(err, func(e *usecase.Error) {
 			api.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
@@ -59,7 +47,7 @@ func (u *user) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = u.userUsecase.UpdatePassword(userID, []byte(body.CurrentPassword), []byte(body.NewPassword))
+	err = u.userUC.UpdatePassword(userID, []byte(body.CurrentPassword), []byte(body.NewPassword))
 	if err != nil {
 		api.HandleError(err, func(e *usecase.Error) {
 			api.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)

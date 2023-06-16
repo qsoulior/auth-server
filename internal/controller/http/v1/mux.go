@@ -15,10 +15,26 @@ import (
 	"github.com/qsoulior/auth-server/pkg/uuid"
 )
 
-func Mux(user usecase.User, token usecase.Token, logger log.Logger) http.Handler {
+func Mux(userUC usecase.User, tokenUC usecase.Token, authUC usecase.Auth, logger log.Logger) http.Handler {
+	user := user{userUC}
+	token := token{userUC, tokenUC}
+	auth := AuthMiddleware(authUC, logger)
+
 	mux := chi.NewMux()
-	mux.Mount("/user", UserMux(user, logger))
-	mux.Mount("/token", TokenMux(user, token, logger))
+	mux.Route("/", func(r chi.Router) {
+		r.Route("/user", func(r chi.Router) {
+			r.Post("/", user.Create)
+			// r.With(auth).Put("/", user.Get)
+			r.With(auth).Put("/password", user.UpdatePassword)
+		})
+		r.Route("/token", func(r chi.Router) {
+			r.Post("/", token.Create)
+			r.Post("/refresh", token.Refresh)
+			r.Post("/revoke", token.Revoke)
+			r.Post("/revoke-all", token.RevokeAll)
+		})
+	})
+
 	return mux
 }
 

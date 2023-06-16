@@ -3,26 +3,13 @@ package v1
 import (
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
 	api "github.com/qsoulior/auth-server/internal/controller/http"
 	"github.com/qsoulior/auth-server/internal/usecase"
-	"github.com/qsoulior/auth-server/pkg/log"
 )
 
 type token struct {
-	userUsecase  usecase.User
-	tokenUsecase usecase.Token
-	logger       log.Logger
-}
-
-func TokenMux(userUsecase usecase.User, tokenUsecase usecase.Token, logger log.Logger) http.Handler {
-	t := token{userUsecase, tokenUsecase, logger}
-	mux := chi.NewMux()
-	mux.Post("/", t.Create)
-	mux.Post("/refresh", t.Refresh)
-	mux.Post("/revoke", t.Revoke)
-	mux.Post("/revoke-all", t.RevokeAll)
-	return mux
+	userUC  usecase.User
+	tokenUC usecase.Token
 }
 
 func (t *token) Create(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +20,7 @@ func (t *token) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	fingerprint := readFingerprint(r)
 
-	userID, err := t.userUsecase.Authenticate(data)
+	userID, err := t.userUC.Verify(data)
 	if err != nil {
 		api.HandleError(err, func(e *usecase.Error) {
 			api.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
@@ -41,7 +28,7 @@ func (t *token) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, refreshToken, err := t.tokenUsecase.Create(userID, fingerprint)
+	accessToken, refreshToken, err := t.tokenUC.Create(userID, fingerprint)
 	if err != nil {
 		api.HandleError(err, func(e *usecase.Error) {
 			api.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
@@ -62,7 +49,7 @@ func (t *token) Refresh(w http.ResponseWriter, r *http.Request) {
 	}
 	fingerprint := readFingerprint(r)
 
-	accessToken, refreshToken, err := t.tokenUsecase.Refresh(token, fingerprint)
+	accessToken, refreshToken, err := t.tokenUC.Refresh(token, fingerprint)
 	if err != nil {
 		api.HandleError(err, func(e *usecase.Error) {
 			if e.Err == usecase.ErrTokenExpired {
@@ -86,7 +73,7 @@ func (t *token) Revoke(w http.ResponseWriter, r *http.Request) {
 	}
 	fingerprint := readFingerprint(r)
 
-	err = t.tokenUsecase.Delete(token, fingerprint)
+	err = t.tokenUC.Delete(token, fingerprint)
 	if err != nil {
 		api.HandleError(err, func(e *usecase.Error) {
 			if e.Err == usecase.ErrTokenExpired {
@@ -110,7 +97,7 @@ func (t *token) RevokeAll(w http.ResponseWriter, r *http.Request) {
 	}
 	fingerprint := readFingerprint(r)
 
-	err = t.tokenUsecase.DeleteAll(token, fingerprint)
+	err = t.tokenUC.DeleteAll(token, fingerprint)
 	if err != nil {
 		api.HandleError(err, func(e *usecase.Error) {
 			if e.Err == usecase.ErrTokenExpired {

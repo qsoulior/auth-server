@@ -6,10 +6,7 @@ import (
 	"strings"
 
 	"github.com/qsoulior/auth-server/internal/entity"
-	"github.com/qsoulior/auth-server/internal/pkg/fingerprint"
-	"github.com/qsoulior/auth-server/internal/pkg/hash"
 	"github.com/qsoulior/auth-server/internal/repo"
-	"github.com/qsoulior/auth-server/pkg/jwt"
 	"github.com/qsoulior/auth-server/pkg/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -84,8 +81,7 @@ func verifyPassword(hashedPassword []byte, password []byte) error {
 }
 
 type UserRepos struct {
-	User  repo.User
-	Token repo.Token
+	User repo.User
 }
 
 type UserParams struct {
@@ -95,11 +91,10 @@ type UserParams struct {
 type user struct {
 	repos  UserRepos
 	params UserParams
-	jwt    jwt.Parser
 }
 
-func NewUser(repos UserRepos, params UserParams, jwt jwt.Parser) *user {
-	return &user{repos, params, jwt}
+func NewUser(repos UserRepos, params UserParams) *user {
+	return &user{repos, params}
 }
 
 func (u *user) Create(data entity.User) (*entity.User, error) {
@@ -141,7 +136,7 @@ func (u *user) Get(id uuid.UUID) (*entity.User, error) {
 	return user, nil
 }
 
-func (u *user) Authenticate(data entity.User) (uuid.UUID, error) {
+func (u *user) Verify(data entity.User) (uuid.UUID, error) {
 	user, err := u.repos.User.GetByName(context.Background(), data.Name)
 	if err != nil {
 		if errors.Is(err, repo.ErrNoRows) {
@@ -155,25 +150,6 @@ func (u *user) Authenticate(data entity.User) (uuid.UUID, error) {
 	}
 
 	return user.ID, nil
-}
-
-func (u *user) Authorize(token entity.AccessToken, fp []byte) (uuid.UUID, error) {
-	claims, err := u.jwt.Parse(string(token))
-	if err != nil {
-		return uuid.UUID{}, NewError(err, true)
-	}
-
-	userID, err := uuid.FromString(claims.Subject)
-	if err != nil {
-		return uuid.UUID{}, NewError(ErrUserIDInvalid, true)
-	}
-
-	fpObj := fingerprint.New(userID, fp)
-	if err := fpObj.Verify(hash.FromHexString(claims.Fingerprint)); err != nil {
-		return uuid.UUID{}, NewError(err, true)
-	}
-
-	return userID, nil
 }
 
 func (u *user) Delete(id uuid.UUID, currentPassword []byte) error {
@@ -209,10 +185,6 @@ func (u *user) UpdatePassword(id uuid.UUID, currentPassword []byte, newPassword 
 	}
 
 	if err = u.repos.User.UpdatePassword(context.Background(), user.ID, hashedPassword); err != nil {
-		return NewError(err, false)
-	}
-
-	if err = u.repos.Token.DeleteByUser(context.Background(), user.ID); err != nil {
 		return NewError(err, false)
 	}
 

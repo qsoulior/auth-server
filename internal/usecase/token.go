@@ -68,12 +68,12 @@ func (t *token) create(userID uuid.UUID, fp []byte) (entity.AccessToken, *entity
 		return "", nil, NewError(err, false)
 	}
 
-	rolesID := make([]string, len(roles))
+	roleTitles := make([]string, len(roles))
 	for i, role := range roles {
-		rolesID[i] = role.ID.String()
+		roleTitles[i] = role.Title
 	}
 
-	at, err := t.jwt.Build(userID.String(), time.Duration(t.params.AccessAge)*time.Minute, fpHash.HexString(), rolesID)
+	at, err := t.jwt.Build(userID.String(), time.Duration(t.params.AccessAge)*time.Minute, fpHash.HexString(), roleTitles)
 	if err != nil {
 		return "", nil, NewError(err, false)
 	}
