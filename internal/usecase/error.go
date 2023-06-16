@@ -15,6 +15,7 @@ var (
 	ErrPasswordInvalid   = errors.New("password is invalid")
 	ErrPasswordIncorrect = errors.New("password is incorrect")
 	ErrTokenIncorrect    = errors.New("token is incorrect")
+	ErrTokenInvalid      = errors.New("token is invalid")
 	ErrTokenExpired      = errors.New("token is expired")
 )
 

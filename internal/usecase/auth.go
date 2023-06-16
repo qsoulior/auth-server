@@ -19,7 +19,7 @@ func NewAuth(jwt jwt.Parser) *auth {
 func (a *auth) Verify(token entity.AccessToken, fp []byte) (uuid.UUID, []string, error) {
 	claims, err := a.jwt.Parse(string(token))
 	if err != nil {
-		return uuid.UUID{}, nil, NewError(err, true)
+		return uuid.UUID{}, nil, NewError(ErrTokenInvalid, true)
 	}
 
 	userID, err := uuid.FromString(claims.Subject)
