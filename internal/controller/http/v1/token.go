@@ -15,12 +15,12 @@ type token struct {
 func (t *token) Create(w http.ResponseWriter, r *http.Request) {
 	data, err := readUser(r)
 	if err != nil {
-		api.ErrorJSON(w, err.Error(), http.StatusBadRequest)
+		api.DecodingError(w)
 		return
 	}
 	fingerprint := readFingerprint(r)
 
-	userID, err := t.userUC.Verify(data)
+	userID, err := t.userUC.Verify(*data)
 	if err != nil {
 		api.HandleError(err, func(e *usecase.Error) {
 			api.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
@@ -37,7 +37,7 @@ func (t *token) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeRefreshToken(w, refreshToken)
-	w.WriteHeader(201)
+	w.WriteHeader(http.StatusCreated)
 	writeAccessToken(w, accessToken)
 }
 
@@ -61,7 +61,7 @@ func (t *token) Refresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeRefreshToken(w, refreshToken)
-	w.WriteHeader(201)
+	w.WriteHeader(http.StatusCreated)
 	writeAccessToken(w, accessToken)
 }
 
@@ -85,7 +85,7 @@ func (t *token) Revoke(w http.ResponseWriter, r *http.Request) {
 	}
 
 	deleteRefreshToken(w)
-	w.WriteHeader(204)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (t *token) RevokeAll(w http.ResponseWriter, r *http.Request) {
@@ -108,5 +108,5 @@ func (t *token) RevokeAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	deleteRefreshToken(w)
-	w.WriteHeader(204)
+	w.WriteHeader(http.StatusNoContent)
 }

@@ -16,11 +16,11 @@ type user struct {
 func (u *user) Create(w http.ResponseWriter, r *http.Request) {
 	user, err := readUser(r)
 	if err != nil {
-		api.ErrorJSON(w, err.Error(), http.StatusBadRequest)
+		api.DecodingError(w)
 		return
 	}
 
-	_, err = u.userUC.Create(user)
+	_, err = u.userUC.Create(*user)
 	if err != nil {
 		api.HandleError(err, func(e *usecase.Error) {
 			api.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
@@ -28,7 +28,7 @@ func (u *user) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(201)
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (u *user) Get(w http.ResponseWriter, r *http.Request) {
@@ -43,12 +43,37 @@ func (u *user) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 	e := json.NewEncoder(w)
 	e.Encode(map[string]any{
 		"id":       user.ID,
 		"username": user.Name,
 	})
+}
+
+func (u *user) Delete(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID, _ := ctx.Value("userID").(uuid.UUID)
+
+	var body struct {
+		Password string `json:"password"`
+	}
+	d := json.NewDecoder(r.Body)
+	err := d.Decode(&body)
+	if err != nil {
+		api.DecodingError(w)
+		return
+	}
+
+	err = u.userUC.Delete(userID, []byte(body.Password))
+	if err != nil {
+		api.HandleError(err, func(e *usecase.Error) {
+			api.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
+		})
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (u *user) UpdatePassword(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +87,7 @@ func (u *user) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	d := json.NewDecoder(r.Body)
 	err := d.Decode(&body)
 	if err != nil {
-		api.ErrorJSON(w, "decoding error "+err.Error(), http.StatusBadRequest)
+		api.DecodingError(w)
 		return
 	}
 
@@ -74,5 +99,5 @@ func (u *user) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(204)
+	w.WriteHeader(http.StatusNoContent)
 }

@@ -25,6 +25,7 @@ func Mux(userUC usecase.User, tokenUC usecase.Token, authUC usecase.Auth, logger
 		r.Route("/user", func(r chi.Router) {
 			r.Post("/", user.Create)
 			r.With(auth).Get("/", user.Get)
+			r.With(auth).Delete("/", user.Delete)
 			r.With(auth).Put("/password", user.UpdatePassword)
 		})
 		r.Route("/token", func(r chi.Router) {
@@ -38,13 +39,14 @@ func Mux(userUC usecase.User, tokenUC usecase.Token, authUC usecase.Auth, logger
 	return mux
 }
 
-func readUser(r *http.Request) (entity.User, error) {
-	var user entity.User
+func readUser(r *http.Request) (*entity.User, error) {
+	user := new(entity.User)
 	d := json.NewDecoder(r.Body)
 	err := d.Decode(&user)
 	if err != nil {
-		return user, errors.New("decoding error")
+		return nil, err
 	}
+
 	return user, nil
 }
 

@@ -35,6 +35,10 @@ func InternalServerError(w http.ResponseWriter) {
 	ErrorJSON(w, "internal server error", http.StatusInternalServerError)
 }
 
+func DecodingError(w http.ResponseWriter) {
+	ErrorJSON(w, "body decoding error", http.StatusBadRequest)
+}
+
 func HandleError(err error, fn func(e *usecase.Error)) {
 	var e *usecase.Error
 	if errors.As(err, &e) && e.External {
