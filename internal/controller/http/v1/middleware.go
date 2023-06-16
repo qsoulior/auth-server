@@ -12,12 +12,16 @@ import (
 func AuthMiddleware(auth usecase.Auth, logger log.Logger) api.Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token := readAccessToken(r)
+			token, err := readAccessToken(r)
+			if err != nil {
+				api.ErrorJSON(w, err.Error(), http.StatusUnauthorized)
+				return
+			}
 			fingerprint := readFingerprint(r)
 			userID, roleTitles, err := auth.Verify(token, fingerprint)
 			if err != nil {
 				api.HandleError(err, func(e *usecase.Error) {
-					api.ErrorJSON(w, e.Err.Error(), http.StatusForbidden)
+					api.ErrorJSON(w, e.Err.Error(), http.StatusUnauthorized)
 				})
 				return
 			}

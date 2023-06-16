@@ -37,19 +37,19 @@ func (t *token) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeRefreshToken(w, refreshToken)
-	w.WriteHeader(200)
+	w.WriteHeader(201)
 	writeAccessToken(w, accessToken)
 }
 
 func (t *token) Refresh(w http.ResponseWriter, r *http.Request) {
-	token, err := readRefreshToken(r)
+	tokenID, err := readRefreshToken(r)
 	if err != nil {
 		api.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	fingerprint := readFingerprint(r)
 
-	accessToken, refreshToken, err := t.tokenUC.Refresh(token, fingerprint)
+	accessToken, refreshToken, err := t.tokenUC.Refresh(tokenID, fingerprint)
 	if err != nil {
 		api.HandleError(err, func(e *usecase.Error) {
 			if e.Err == usecase.ErrTokenExpired {
@@ -61,19 +61,19 @@ func (t *token) Refresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeRefreshToken(w, refreshToken)
-	w.WriteHeader(200)
+	w.WriteHeader(201)
 	writeAccessToken(w, accessToken)
 }
 
 func (t *token) Revoke(w http.ResponseWriter, r *http.Request) {
-	token, err := readRefreshToken(r)
+	tokenID, err := readRefreshToken(r)
 	if err != nil {
 		api.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	fingerprint := readFingerprint(r)
 
-	err = t.tokenUC.Delete(token, fingerprint)
+	err = t.tokenUC.Delete(tokenID, fingerprint)
 	if err != nil {
 		api.HandleError(err, func(e *usecase.Error) {
 			if e.Err == usecase.ErrTokenExpired {
@@ -85,19 +85,18 @@ func (t *token) Revoke(w http.ResponseWriter, r *http.Request) {
 	}
 
 	deleteRefreshToken(w)
-	w.WriteHeader(200)
-	writeSuccess(w)
+	w.WriteHeader(204)
 }
 
 func (t *token) RevokeAll(w http.ResponseWriter, r *http.Request) {
-	token, err := readRefreshToken(r)
+	tokenID, err := readRefreshToken(r)
 	if err != nil {
 		api.ErrorJSON(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	fingerprint := readFingerprint(r)
 
-	err = t.tokenUC.DeleteAll(token, fingerprint)
+	err = t.tokenUC.DeleteAll(tokenID, fingerprint)
 	if err != nil {
 		api.HandleError(err, func(e *usecase.Error) {
 			if e.Err == usecase.ErrTokenExpired {
@@ -109,6 +108,5 @@ func (t *token) RevokeAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	deleteRefreshToken(w)
-	w.WriteHeader(200)
-	writeSuccess(w)
+	w.WriteHeader(204)
 }

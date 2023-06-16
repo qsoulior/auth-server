@@ -24,7 +24,7 @@ func Mux(userUC usecase.User, tokenUC usecase.Token, authUC usecase.Auth, logger
 	mux.Route("/", func(r chi.Router) {
 		r.Route("/user", func(r chi.Router) {
 			r.Post("/", user.Create)
-			// r.With(auth).Put("/", user.Get)
+			r.With(auth).Get("/", user.Get)
 			r.With(auth).Put("/password", user.UpdatePassword)
 		})
 		r.Route("/token", func(r chi.Router) {
@@ -48,13 +48,13 @@ func readUser(r *http.Request) (entity.User, error) {
 	return user, nil
 }
 
-func readAccessToken(r *http.Request) entity.AccessToken {
+func readAccessToken(r *http.Request) (entity.AccessToken, error) {
 	authorization := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
 	if len(authorization) < 2 || authorization[0] != "Bearer" {
-		return ""
+		return "", errors.New("invalid authorization header")
 	}
 
-	return entity.AccessToken(authorization[1])
+	return entity.AccessToken(authorization[1]), nil
 }
 
 func readRefreshToken(r *http.Request) (uuid.UUID, error) {
@@ -76,13 +76,6 @@ func readRefreshToken(r *http.Request) (uuid.UUID, error) {
 
 func readFingerprint(r *http.Request) []byte {
 	return []byte(fmt.Sprintf("%s : %s : %s : %s", r.Header.Get("Sec-CH-UA"), r.Header.Get("User-Agent"), r.Header.Get("Accept-Language"), r.Header.Get("Upgrade-Insecure-Requests")))
-}
-
-func writeSuccess(w http.ResponseWriter) {
-	e := json.NewEncoder(w)
-	e.Encode(map[string]string{
-		"message": "success",
-	})
 }
 
 func writeAccessToken(w http.ResponseWriter, token entity.AccessToken) {

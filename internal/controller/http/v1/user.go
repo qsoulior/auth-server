@@ -28,8 +28,27 @@ func (u *user) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.WriteHeader(201)
+}
+
+func (u *user) Get(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID, _ := ctx.Value("userID").(uuid.UUID)
+
+	user, err := u.userUC.Get(userID)
+	if err != nil {
+		api.HandleError(err, func(e *usecase.Error) {
+			api.ErrorJSON(w, e.Err.Error(), http.StatusNotFound)
+		})
+		return
+	}
+
 	w.WriteHeader(200)
-	writeSuccess(w)
+	e := json.NewEncoder(w)
+	e.Encode(map[string]any{
+		"id":       user.ID,
+		"username": user.Name,
+	})
 }
 
 func (u *user) UpdatePassword(w http.ResponseWriter, r *http.Request) {
@@ -55,6 +74,5 @@ func (u *user) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(200)
-	writeSuccess(w)
+	w.WriteHeader(204)
 }
