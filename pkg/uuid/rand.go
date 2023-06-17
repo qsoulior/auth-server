@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	ErrInvalid = errors.New("uuid: invalid UUID")
+	ErrInvalid = errors.New("invalid UUID")
 )
 
 type UUID [16]byte
