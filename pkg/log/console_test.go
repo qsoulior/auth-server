@@ -1,4 +1,4 @@
-package log_test
+package log
 
 import (
 	"bytes"
@@ -6,8 +6,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-
-	"github.com/qsoulior/auth-server/pkg/log"
 )
 
 func catchStd(std **os.File, f func()) (string, error) {
@@ -35,7 +33,7 @@ func catchStd(std **os.File, f func()) (string, error) {
 }
 
 func TestConsoleLogger_Debug(t *testing.T) {
-	logger := log.NewConsoleLogger()
+	logger := NewConsoleLogger()
 
 	msg := "debug message"
 	got, err := catchStd(&os.Stdout, func() {
@@ -56,7 +54,7 @@ func TestConsoleLogger_Debug(t *testing.T) {
 }
 
 func TestConsoleLogger_Info(t *testing.T) {
-	logger := log.NewConsoleLogger()
+	logger := NewConsoleLogger()
 
 	msg := "info message"
 	got, err := catchStd(&os.Stdout, func() {
@@ -77,7 +75,7 @@ func TestConsoleLogger_Info(t *testing.T) {
 }
 
 func TestConsoleLogger_Error(t *testing.T) {
-	logger := log.NewConsoleLogger()
+	logger := NewConsoleLogger()
 
 	msg := "error message"
 	got, err := catchStd(&os.Stderr, func() {
@@ -98,5 +96,5 @@ func TestConsoleLogger_Error(t *testing.T) {
 }
 
 func TestNewConsoleLogger(t *testing.T) {
-	log.NewConsoleLogger()
+	NewConsoleLogger()
 }

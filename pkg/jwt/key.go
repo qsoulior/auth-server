@@ -59,9 +59,6 @@ type keyParser struct {
 
 func (p keyParser) Parse(alg string) (any, error) {
 	method, err := GetSigningMethod(alg)
-	if err != nil {
-		return nil, err
-	}
 
 	switch method.(type) {
 	case *jwt.SigningMethodHMAC:
@@ -74,7 +71,7 @@ func (p keyParser) Parse(alg string) (any, error) {
 		return p.key.Ed25519()
 	}
 
-	return nil, ErrAlgInvalid
+	return nil, err
 }
 
 type parseFunc func(data []byte, alg string) (any, error)
