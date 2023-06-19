@@ -1,7 +1,10 @@
 # auth-server
+![GitHub go.mod Go version (subdirectory of monorepo)](https://img.shields.io/github/go-mod/go-version/qsoulior/auth-server?style=flat-square)
+[![Go Report Card](https://goreportcard.com/badge/github.com/qsoulior/auth-server?style=flat-square)](https://goreportcard.com/report/github.com/qsoulior/auth-server)
+
 `auth-server` is a microservice that provides authentication and authorization using access and refresh tokens.
 
-## Tokens
+## ▶️ Tokens
 
 ### Access token
 Access token is a JSON Web Token (JWT) signed using one of the algorithms: `HMAC SHA`, `RSA`, `ECDSA` or `EdDSA`. Token contains a payload with two custom claims: `fingerprint` and `roles`.
@@ -35,10 +38,10 @@ This token is issued by the server upon successful authentication and is refresh
 Set-Cookie: refresh_token=d337672c-d6e9-4058-b838-a634bbc5bddc; Expires=Wed, 19 Jul 2023 14:04:07 GMT; HttpOnly; Secure; SameSite=Strict
 ```
 
-## Run
+## ▶️ Run
 > TODO
 
-## Configuration
+## ▶️ Configuration
 `configs/dev.env`
 ```
 APP_NAME=auth
@@ -54,7 +57,7 @@ RT_AGE=30
 BCRYPT_COST=4
 ```
 
-## Endpoints
+## ▶️ Endpoints
 ### Create user
 `POST /user`
 
