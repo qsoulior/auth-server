@@ -40,7 +40,7 @@ Set-Cookie: refresh_token=d337672c-d6e9-4058-b838-a634bbc5bddc; Expires=Wed, 19 
 
 ## Configuration
 `configs/dev.env`
-```properties
+```
 APP_NAME=auth
 APP_ENV=development
 KEY_PUBLIC_PATH=/secrets/ecdsa.pub
@@ -66,7 +66,7 @@ Request:
 }
 ```
 Response:
-```json
+```
 201 Created
 ```
 
@@ -78,8 +78,10 @@ Request:
 Authorization: Bearer <access_token>
 ```
 Response:
-```json
+```
 200 OK
+```
+```json
 {
   "id": "522198cc-42d9-4b47-b20e-1def58dc2709",
   "username": "test"
@@ -100,7 +102,7 @@ Authorization: Bearer <access_token>
 }
 ```
 Response:
-```json
+```
 204 No Content
 ```
 
@@ -117,7 +119,7 @@ Authorization: Bearer <access_token>
 }
 ```
 Response:
-```json
+```
 204 No Content
 ```
 
@@ -132,8 +134,10 @@ Request:
 }
 ```
 Response:
-```json
+```
 201 Created
+```
+```json
 {
   "access_token": "<access_token>"
 }
@@ -147,8 +151,10 @@ Request:
 Cookie: refresh_token=d337672c-d6e9-4058-b838-a634bbc5bddc; Expires=Wed, 19 Jul 2023 14:04:07 GMT; HttpOnly; Secure; SameSite=Strict
 ```
 Response:
-```json
+```
 201 Created
+```
+```json
 {
   "access_token": "<access_token>"
 }
@@ -162,7 +168,7 @@ Request:
 Cookie: refresh_token=d337672c-d6e9-4058-b838-a634bbc5bddc; Expires=Wed, 19 Jul 2023 14:04:07 GMT; HttpOnly; Secure; SameSite=Strict
 ```
 Response:
-```json
+```
 204 No Content
 ```
 
@@ -174,6 +180,6 @@ Request:
 Cookie: refresh_token=d337672c-d6e9-4058-b838-a634bbc5bddc; Expires=Wed, 19 Jul 2023 14:04:07 GMT; HttpOnly; Secure; SameSite=Strict
 ```
 Response:
-```json
+```
 204 No Content
 ```
