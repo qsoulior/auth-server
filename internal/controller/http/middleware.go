@@ -18,6 +18,11 @@ func ContentTypeMiddleware(contentTypes ...string) Middleware {
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.ContentLength == 0 {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			ct := r.Header.Get("Content-Type")
 			if i := strings.IndexRune(ct, ';'); i != -1 {
 				ct = ct[0:i]

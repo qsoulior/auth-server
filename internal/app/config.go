@@ -18,8 +18,8 @@ type (
 		Key      KeyConfig
 		HTTP     HTTPConfig
 		Postgres PostgresConfig
-		RT       RTConfig
 		AT       ATConfig
+		RT       RTConfig
 		Bcrypt   BcryptConfig
 	}
 
