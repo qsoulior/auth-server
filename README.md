@@ -43,7 +43,7 @@ Set-Cookie: refresh_token=d337672c-d6e9-4058-b838-a634bbc5bddc; Expires=Wed, 19 
 
 ## ▶️ Configuration
 `configs/dev.env`
-```
+```dotenv
 APP_NAME=auth
 APP_ENV=development
 KEY_PUBLIC_PATH=/secrets/ecdsa.pub

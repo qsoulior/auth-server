@@ -1,8 +1,6 @@
 package app
 
 import (
-	"fmt"
-
 	"github.com/qsoulior/auth-server/pkg/config"
 )
 
@@ -31,6 +29,7 @@ type (
 	}
 
 	HTTPConfig struct {
+		Host string `env:"HTTP_HOST" default:"0.0.0.0"`
 		Port string `env:"HTTP_PORT" default:"8000"`
 	}
 
@@ -53,10 +52,16 @@ type (
 	}
 )
 
-func NewConfig() (*Config, error) {
+func NewConfig(path string) (*Config, error) {
 	cfg := new(Config)
-	if err := config.ReadEnvFile(cfg, "configs/dev.env"); err != nil {
-		return nil, fmt.Errorf("config error: %w", err)
+	if path == "" {
+		if err := config.ReadEnv(cfg); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := config.ReadEnvFile(cfg, path); err != nil {
+			return nil, err
+		}
 	}
 	return cfg, nil
 }

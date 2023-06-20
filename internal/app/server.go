@@ -23,13 +23,8 @@ func NewServer(cfg *Config, logger log.Logger, user usecase.User, token usecase.
 
 	mux.Mount("/v1", v1.Mux(user, token, auth, logger))
 
-	host := ""
-	if cfg.Env == EnvDev {
-		host = "localhost"
-	}
-
 	server := &http.Server{
-		Addr:    fmt.Sprintf("%s:%s", host, cfg.HTTP.Port),
+		Addr:    fmt.Sprintf("%s:%s", cfg.HTTP.Host, cfg.HTTP.Port),
 		Handler: mux,
 	}
 
