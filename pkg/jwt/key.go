@@ -9,7 +9,7 @@ import (
 type key interface {
 	HMAC() (any, error)
 	RSA() (any, error)
-	ECDSA() (any, error)
+	ECDSA(bitSize int) (any, error)
 	Ed25519() (any, error)
 }
 
@@ -25,8 +25,15 @@ func (p publicKey) RSA() (any, error) {
 	return jwt.ParseRSAPublicKeyFromPEM(p.data)
 }
 
-func (p publicKey) ECDSA() (any, error) {
-	return jwt.ParseECPublicKeyFromPEM(p.data)
+func (p publicKey) ECDSA(bitSize int) (any, error) {
+	key, err := jwt.ParseECPublicKeyFromPEM(p.data)
+	if err != nil {
+		return nil, err
+	}
+	if key.Params().BitSize != bitSize {
+		return nil, jwt.ErrInvalidKey
+	}
+	return key, nil
 }
 
 func (p publicKey) Ed25519() (any, error) {
@@ -45,8 +52,16 @@ func (p privateKey) RSA() (any, error) {
 	return jwt.ParseRSAPrivateKeyFromPEM(p.data)
 }
 
-func (p privateKey) ECDSA() (any, error) {
-	return jwt.ParseECPrivateKeyFromPEM(p.data)
+func (p privateKey) ECDSA(bitSize int) (any, error) {
+	key, err := jwt.ParseECPrivateKeyFromPEM(p.data)
+	if err != nil {
+		return nil, err
+	}
+	if key.Params().BitSize != bitSize {
+		return nil, jwt.ErrInvalidKey
+	}
+
+	return key, nil
 }
 
 func (p privateKey) Ed25519() (any, error) {
@@ -60,13 +75,13 @@ type keyParser struct {
 func (p keyParser) Parse(alg string) (any, error) {
 	method, err := GetSigningMethod(alg)
 
-	switch method.(type) {
+	switch method := method.(type) {
 	case *jwt.SigningMethodHMAC:
 		return p.key.HMAC()
 	case *jwt.SigningMethodRSA, *jwt.SigningMethodRSAPSS:
 		return p.key.RSA()
 	case *jwt.SigningMethodECDSA:
-		return p.key.ECDSA()
+		return p.key.ECDSA(method.CurveBits)
 	case *jwt.SigningMethodEd25519:
 		return p.key.Ed25519()
 	}

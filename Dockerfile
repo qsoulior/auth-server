@@ -8,7 +8,13 @@ WORKDIR /build
 COPY . .
 RUN go build -v -o ./main ./cmd
 
-FROM alpine:latest
+FROM alpine:latest AS keys
+WORKDIR /keys
+RUN apk add --no-cache --update openssh-keygen && \
+    ssh-keygen -t ecdsa -f ./ecdsa -b 521 -m pem && \
+    ssh-keygen -f ./ecdsa -e -m pem > ./ecdsa.pub
+
+FROM secrets
 WORKDIR /app
 COPY --from=build /build/main ./
 CMD ["./main"]

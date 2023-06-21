@@ -24,8 +24,8 @@ type (
 	Environment string
 
 	KeyConfig struct {
-		PrivatePath string `env:"KEY_PRIVATE_PATH"`
-		PublicPath  string `env:"KEY_PUBLIC_PATH"`
+		PrivatePath string `env:"KEY_PRIVATE"`
+		PublicPath  string `env:"KEY_PUBLIC"`
 	}
 
 	HTTPConfig struct {

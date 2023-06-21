@@ -54,7 +54,6 @@ func Test_publicKey_ECDSA(t *testing.T) {
 	validData := []byte("-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE9pyVw0cc766PaQXgPxUvzw4gFp0oFlciHIP3uUFspJl4vJDEOndIysnIgx1ox4GVzLLASmtyJlLdgk6Xd3XxdQ==\n-----END PUBLIC KEY-----")
 	invalidData := []byte{0}
 	wantKey, _ := jwt.ParseECPublicKeyFromPEM(validData)
-	wantNil, _ := jwt.ParseECPublicKeyFromPEM(invalidData)
 
 	tests := []struct {
 		name    string
@@ -63,11 +62,11 @@ func Test_publicKey_ECDSA(t *testing.T) {
 		wantErr bool
 	}{
 		{"ValidData", publicKey{validData}, wantKey, false},
-		{"InvalidData", publicKey{invalidData}, wantNil, true},
+		{"InvalidData", publicKey{invalidData}, nil, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.p.ECDSA()
+			got, err := tt.p.ECDSA(256)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("publicKey.ECDSA() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -139,7 +138,6 @@ func Test_privateKey_ECDSA(t *testing.T) {
 	validData := []byte("-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEID7b3BCBKIOd9s5XUFQV3uGLKMpELITxNN+7JJbe2JifoAoGCCqGSM49AwEHoUQDQgAEFg4ATkXslQmgWKijnsmfPTxBMeA0yhhgYqIncASN5OFZXYxUKgZkozECV7Uuk5izTlR9GaaQJdEVlM7D0zpsEw==\n-----END EC PRIVATE KEY-----")
 	invalidData := []byte{0}
 	wantKey, _ := jwt.ParseECPrivateKeyFromPEM(validData)
-	wantNil, _ := jwt.ParseECPrivateKeyFromPEM(invalidData)
 
 	tests := []struct {
 		name    string
@@ -148,11 +146,11 @@ func Test_privateKey_ECDSA(t *testing.T) {
 		wantErr bool
 	}{
 		{"ValidData", privateKey{validData}, wantKey, false},
-		{"InvalidData", privateKey{invalidData}, wantNil, true},
+		{"InvalidData", privateKey{invalidData}, nil, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.p.ECDSA()
+			got, err := tt.p.ECDSA(256)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("privateKey.ECDSA() error = %v, wantErr %v", err, tt.wantErr)
 				return
