@@ -14,7 +14,7 @@ RUN apk add --no-cache --update openssh-keygen && \
     ssh-keygen -t ecdsa -f ./ecdsa -b 521 -m pem && \
     ssh-keygen -f ./ecdsa -e -m pem > ./ecdsa.pub
 
-FROM secrets
+FROM keys
 WORKDIR /app
 COPY --from=build /build/main ./
 CMD ["./main"]

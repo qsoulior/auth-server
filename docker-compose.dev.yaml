@@ -1,0 +1,27 @@
+services:
+  web:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - 3000:80
+    env_file:
+      - ./configs/docker.dev.env
+    environment:
+      POSTGRES_URI: postgres://postgres:test@db:5432/postgres?search_path=auth
+    
+
+  db:
+    image: postgres:alpine
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: test
+    volumes:
+      - ./migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -q -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

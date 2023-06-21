@@ -55,18 +55,24 @@ func Test_publicKey_ECDSA(t *testing.T) {
 	invalidData := []byte{0}
 	wantKey, _ := jwt.ParseECPublicKeyFromPEM(validData)
 
+	type args struct {
+		bitSize int
+	}
+
 	tests := []struct {
 		name    string
 		p       publicKey
+		args    args
 		want    any
 		wantErr bool
 	}{
-		{"ValidData", publicKey{validData}, wantKey, false},
-		{"InvalidData", publicKey{invalidData}, nil, true},
+		{"ValidData", publicKey{validData}, args{256}, wantKey, false},
+		{"InvalidData", publicKey{invalidData}, args{256}, nil, true},
+		{"InvalidSize", publicKey{validData}, args{384}, nil, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.p.ECDSA(256)
+			got, err := tt.p.ECDSA(tt.args.bitSize)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("publicKey.ECDSA() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -139,18 +145,23 @@ func Test_privateKey_ECDSA(t *testing.T) {
 	invalidData := []byte{0}
 	wantKey, _ := jwt.ParseECPrivateKeyFromPEM(validData)
 
+	type args struct {
+		bitSize int
+	}
 	tests := []struct {
 		name    string
 		p       privateKey
+		args    args
 		want    any
 		wantErr bool
 	}{
-		{"ValidData", privateKey{validData}, wantKey, false},
-		{"InvalidData", privateKey{invalidData}, nil, true},
+		{"ValidData", privateKey{validData}, args{256}, wantKey, false},
+		{"InvalidData", privateKey{invalidData}, args{256}, nil, true},
+		{"InvalidSize", privateKey{validData}, args{384}, nil, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.p.ECDSA(256)
+			got, err := tt.p.ECDSA(tt.args.bitSize)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("privateKey.ECDSA() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -176,9 +187,7 @@ func Test_privateKey_Ed25519(t *testing.T) {
 }
 
 func Test_keyParser_Parse(t *testing.T) {
-	keyRSA, _ := jwt.ParseRSAPublicKeyFromPEM(nil)
-	keyECDSA, _ := jwt.ParseECPublicKeyFromPEM(nil)
-	keyEd25519, _ := jwt.ParseEdPublicKeyFromPEM(nil)
+	nilRSA, _ := jwt.ParseRSAPublicKeyFromPEM(nil)
 
 	type args struct {
 		alg string
@@ -192,9 +201,9 @@ func Test_keyParser_Parse(t *testing.T) {
 	}{
 		{"ValidAlg", keyParser{publicKey{[]byte{0}}}, args{"HS256"}, []byte{0}, false},
 		{"InvalidAlg", keyParser{publicKey{}}, args{"HS255"}, nil, true},
-		{"InvalidKeyRSA", keyParser{publicKey{}}, args{"RS256"}, keyRSA, true},
-		{"InvalidKeyECDSA", keyParser{publicKey{}}, args{"ES256"}, keyECDSA, true},
-		{"InvalidKeyEd25519", keyParser{publicKey{}}, args{"EdDSA"}, keyEd25519, true},
+		{"InvalidKeyRSA", keyParser{publicKey{}}, args{"RS256"}, nilRSA, true},
+		{"InvalidKeyECDSA", keyParser{publicKey{}}, args{"ES256"}, nil, true},
+		{"InvalidKeyEd25519", keyParser{publicKey{}}, args{"EdDSA"}, nil, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
