@@ -48,8 +48,10 @@ APP_NAME=auth
 APP_ENV=development
 KEY_PUBLIC_PATH=/secrets/ecdsa.pub
 KEY_PRIVATE_PATH=/secrets/ecdsa
+HTTP_HOST=0.0.0.0
 HTTP_PORT=3000
-POSTGRES_URI=postgres://postgres:test123@localhost:5432/postgres?search_path=auth
+HTTP_ORIGINS=https://*.example1.com,http://example2.com
+POSTGRES_URI=postgres://postgres:test@localhost:5432/postgres?search_path=auth
 AT_ALG=ES256
 AT_AGE=15
 RT_CAP=10

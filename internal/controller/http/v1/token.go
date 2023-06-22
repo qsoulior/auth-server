@@ -37,6 +37,7 @@ func (t *token) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeRefreshToken(w, refreshToken)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	writeAccessToken(w, accessToken)
 }
@@ -61,6 +62,7 @@ func (t *token) Refresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeRefreshToken(w, refreshToken)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	writeAccessToken(w, accessToken)
 }
