@@ -29,8 +29,9 @@ type (
 	}
 
 	HTTPConfig struct {
-		Host string `env:"HTTP_HOST" default:"0.0.0.0"`
-		Port string `env:"HTTP_PORT" default:"8000"`
+		Host           string   `env:"HTTP_HOST" default:"0.0.0.0"`
+		Port           string   `env:"HTTP_PORT" default:"8000"`
+		AllowedOrigins []string `env:"HTTP_ORIGINS" default:"*"`
 	}
 
 	PostgresConfig struct {

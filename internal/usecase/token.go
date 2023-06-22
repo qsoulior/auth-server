@@ -115,7 +115,7 @@ func (t *token) Refresh(id uuid.UUID, fp []byte) (entity.AccessToken, *entity.Re
 		return "", nil, NewError(err, false)
 	}
 
-	accessToken, refreshToken, err := t.create(token.UserID, token.Fingerprint)
+	accessToken, refreshToken, err := t.create(token.UserID, fp)
 	if err != nil {
 		return "", nil, err
 	}

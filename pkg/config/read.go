@@ -39,6 +39,15 @@ func setValue(fieldVal reflect.Value, val string) error {
 		fieldVal.SetFloat(floatVal)
 	case reflect.String:
 		fieldVal.SetString(val)
+	case reflect.Slice:
+		vals := strings.Split(strings.TrimSpace(val), ",")
+		sliceVal := reflect.MakeSlice(fieldType, len(vals), len(vals))
+		for i, val := range vals {
+			if err := setValue(sliceVal.Index(i), val); err != nil {
+				return nil
+			}
+		}
+		fieldVal.Set(sliceVal)
 	}
 	return nil
 }

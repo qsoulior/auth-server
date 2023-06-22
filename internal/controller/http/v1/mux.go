@@ -90,11 +90,12 @@ func writeAccessToken(w http.ResponseWriter, token entity.AccessToken) {
 func writeRefreshToken(w http.ResponseWriter, token *entity.RefreshToken) {
 	cookie := &http.Cookie{
 		Name:     "refresh_token",
+		Path:     "/v1/token",
 		Value:    token.ID.String(),
 		Expires:  token.ExpiresAt,
 		Secure:   true,
 		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteNoneMode,
 	}
 
 	http.SetCookie(w, cookie)

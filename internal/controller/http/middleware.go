@@ -60,7 +60,7 @@ func LoggerMiddleware(logger log.Logger) Middleware {
 			writer := &loggerWriter{w, 200, 0}
 			start := time.Now()
 			next.ServeHTTP(writer, r)
-			logger.Info("\"%s %s %s\" %d %d %s", r.Method, r.URL, r.Proto, writer.statusCode, writer.size, time.Since(start))
+			logger.Info("%s - \"%s %s %s\" %d %d %s", r.RemoteAddr, r.Method, r.URL, r.Proto, writer.statusCode, writer.size, time.Since(start))
 		})
 	}
 }
