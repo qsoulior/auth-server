@@ -20,3 +20,5 @@
 
 ### Configuration ###
 configs/*
+!configs/docker.dev.env
+!configs/docker.prod.env
