@@ -6,7 +6,7 @@
 
 ## ▶️ Tokens
 
-### Access token
+### 🔓 Access token
 Access token is a JSON Web Token (JWT) signed using one of the algorithms: `HMAC SHA`, `RSA`, `ECDSA` or `EdDSA`. Token contains a payload with two custom claims: `fingerprint` and `roles`.
 
 Payload example:
@@ -21,7 +21,7 @@ Payload example:
 ```
 Access token is created by `auth-server` and used by other microservices to authorize requests.
 
-### Refresh token
+### ♻️ Refresh token
 Refresh token is stored in database and used to refresh the access token.
 
 Refresh token entity:
@@ -38,16 +38,48 @@ This token is issued by the server upon successful authentication and is refresh
 Set-Cookie: refresh_token=d337672c-d6e9-4058-b838-a634bbc5bddc; Expires=Wed, 19 Jul 2023 14:04:07 GMT; HttpOnly; Secure; SameSite=Strict
 ```
 
-## ▶️ Run
-> TODO
+## ▶️ Installation and Running
+### 🖥️ Locally
+Create [configuration](https://github.com/qsoulior/auth-server#%EF%B8%8F-configuration) file and specify its path instead of `<config_file>` in the following commands.
+
+`POSTGRES_URI` must be set to URI of running PostgreSQL database.
+`KEY_PRIVATE` and `KEY_PUBLIC` must be set to generated keys paths.
+```
+go mod download
+go build ./cmd/main.go
+main -c <config_file>
+```
+### 🐳 Docker
+Create [configuration](https://github.com/qsoulior/auth-server#%EF%B8%8F-configuration) file and specify its path instead of `<config_file>` in the following commands.
+
+`POSTGRES_URI` must be set to URI of running PostgreSQL database.
+```
+docker build -t auth-server .
+docker run --env-file <config_file> auth-server
+```
+### 🐙 Docker Compose
+#### For development
+Compose uses `configs/docker.dev.env` to configure web server for development. It also runs database server and applies migrations.
+
+There is no effect of changing `POSTGRES_URI`.
+```
+docker compose -f docker-compose.dev.yaml up --build
+```
+#### For production
+Compose uses `configs/docker.prod.env` to configure web server for production.
+
+`POSTGRES_URI` must be changed to URI of running PostgreSQL database.
+```
+docker compose -f docker-compose.prod.yaml up --build
+```
 
 ## ▶️ Configuration
 `configs/dev.env`
 ```dotenv
 APP_NAME=auth
 APP_ENV=development
-KEY_PUBLIC_PATH=/secrets/ecdsa.pub
-KEY_PRIVATE_PATH=/secrets/ecdsa
+KEY_PUBLIC=/secrets/ecdsa.pub
+KEY_PRIVATE=/secrets/ecdsa
 HTTP_HOST=0.0.0.0
 HTTP_PORT=3000
 HTTP_ORIGINS=https://*.example1.com,http://example2.com
@@ -60,7 +92,7 @@ BCRYPT_COST=4
 ```
 
 ## ▶️ Endpoints
-### Create user
+### 💁 Create user
 `POST /user`
 
 Request:
@@ -75,7 +107,7 @@ Response:
 201 Created
 ```
 
-### Get user
+### 💁 Get user
 `GET /user`
 
 Request:
@@ -93,7 +125,7 @@ Response:
 }
 ```
 
-### Update user password
+### 💁 Update user password
 `PUT /user/password`
 
 Request:
@@ -111,7 +143,7 @@ Response:
 204 No Content
 ```
 
-### Delete user
+### 💁 Delete user
 `DELETE /user`
 
 Request:
@@ -128,7 +160,7 @@ Response:
 204 No Content
 ```
 
-### Create token
+### 🔑 Create token
 `POST /token`
 
 Request:
@@ -148,7 +180,7 @@ Response:
 }
 ```
 
-### Refresh token
+### 🔑 Refresh token
 `POST /token/refresh`
 
 Request:
@@ -165,7 +197,7 @@ Response:
 }
 ```
 
-### Revoke token
+### 🔑 Revoke token
 `POST /token/revoke`
 
 Request:
@@ -177,7 +209,7 @@ Response:
 204 No Content
 ```
 
-### Revoke all tokens
+### 🔑 Revoke all tokens
 `POST /token/revoke-all`
 
 Request:
