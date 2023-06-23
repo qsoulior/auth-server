@@ -77,7 +77,7 @@ func readRefreshToken(r *http.Request) (uuid.UUID, error) {
 }
 
 func readFingerprint(r *http.Request) []byte {
-	return []byte(fmt.Sprintf("%s : %s : %s : %s", r.Header.Get("Sec-CH-UA"), r.Header.Get("User-Agent"), r.Header.Get("Accept-Language"), r.Header.Get("Upgrade-Insecure-Requests")))
+	return []byte(fmt.Sprintf("%s:%s:%s:%s", r.Header.Get("Sec-CH-UA"), r.Header.Get("User-Agent"), r.Header.Get("Accept-Language"), r.Header.Get("Upgrade-Insecure-Requests")))
 }
 
 func writeAccessToken(w http.ResponseWriter, token entity.AccessToken) {
