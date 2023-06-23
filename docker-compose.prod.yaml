@@ -1,5 +1,6 @@
 services:
   web:
+    container_name: auth-web
     build: .
     restart: always
     ports:

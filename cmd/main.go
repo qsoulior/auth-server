@@ -19,6 +19,9 @@ func main() {
 		logger.Fatal("config error: %s", err)
 	}
 
+	if cfgPath == "" {
+		cfgPath = "environment"
+	}
 	logger.Info("config loaded from: %s", cfgPath)
 	logger.Fatal("%s", app.Run(cfg, logger))
 }

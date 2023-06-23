@@ -32,7 +32,19 @@ Private and public keys are generated using the `ECDSA` algorithm when the image
 `POSTGRES_URI` must be set to URI of running PostgreSQL database. 
 ```
 docker build -t auth-server .
-docker run --env-file <config_file> auth-server
+docker run -p <host_port>:<app_port> --env-file <config_file> --name auth-web auth-server
+```
+
+You can copy generated keys to host in the following way:
+```console
+$ docker ps
+CONTAINER ID   IMAGE         COMMAND    CREATED         STATUS         PORTS                  NAMES
+80fb44dc1638   auth-server   "./main"   4 seconds ago   Up 2 seconds   0.0.0.0:3000->80/tcp   auth-web
+
+$ docker cp auth-web:/keys ./
+
+$ ls ./keys
+ecdsa  ecdsa.pub
 ```
 ### 🐙 Docker Compose
 As when running using [Docker](https://github.com/qsoulior/auth-server#-docker), private and public keys are generated when the image is built.

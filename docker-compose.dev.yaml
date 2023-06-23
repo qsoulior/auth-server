@@ -1,5 +1,6 @@
 services:
   web:
+    container_name: auth-web
     build: .
     depends_on:
       db:
@@ -13,6 +14,7 @@ services:
     
 
   db:
+    container_name: auth-db
     image: postgres:alpine
     ports:
       - 5432:5432
