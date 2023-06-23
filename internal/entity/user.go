@@ -1,3 +1,4 @@
+// Package entity provides entity structures for use cases, repositories and controllers.
 package entity
 
 import (
@@ -6,12 +7,15 @@ import (
 	"github.com/qsoulior/auth-server/pkg/uuid"
 )
 
+// User entity.
 type User struct {
 	ID       uuid.UUID `json:"id"`
 	Name     string    `json:"name"`
 	Password []byte    `json:"password"`
 }
 
+// UnmarshalJSON sets *u fields to values from JSON bytes.
+// It sets Password to bytes instead of a string.
 func (u *User) UnmarshalJSON(b []byte) error {
 	var v struct {
 		Name     string

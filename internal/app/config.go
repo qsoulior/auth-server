@@ -1,3 +1,4 @@
+// Package app provides structures and functions to configure and run app.
 package app
 
 import (
@@ -10,6 +11,7 @@ const (
 )
 
 type (
+	// Config represents app configuration structure.
 	Config struct {
 		Name     string      `env:"APP_NAME" default:"auth"`
 		Env      Environment `env:"APP_ENV" default:"development"`
@@ -53,6 +55,9 @@ type (
 	}
 )
 
+// NewConfig reads variables from file or environment
+// and sets them to Config fields.
+// It returns pointer to a Config instance or nil if read failed.
 func NewConfig(path string) (*Config, error) {
 	cfg := new(Config)
 	if path == "" {

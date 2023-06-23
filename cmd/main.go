@@ -1,3 +1,4 @@
+// Package main provides main function.
 package main
 
 import (
@@ -7,6 +8,7 @@ import (
 	"github.com/qsoulior/auth-server/pkg/log"
 )
 
+// Main function.
 func main() {
 	var cfgPath string
 	flag.StringVar(&cfgPath, "c", "", "config file path")

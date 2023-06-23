@@ -1,3 +1,4 @@
+// Package app provides structures and functions to configure and run application.
 package app
 
 import (
@@ -10,6 +11,8 @@ import (
 	"github.com/qsoulior/auth-server/pkg/log"
 )
 
+// Run initializes application modules and runs server.
+// It returns error if server has down.
 func Run(cfg *Config, logger log.Logger) error {
 	// database connection
 	postgres, err := db.NewPostgres(context.Background(), cfg.Postgres.URI)

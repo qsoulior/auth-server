@@ -1,3 +1,4 @@
+// Package entity provides entity structures for use cases, repositories and controllers.
 package entity
 
 import (
@@ -7,8 +8,10 @@ import (
 	"github.com/qsoulior/auth-server/pkg/uuid"
 )
 
+// Access token entity.
 type AccessToken string
 
+// Refresh token entity.
 type RefreshToken struct {
 	ID          uuid.UUID `json:"id"`
 	ExpiresAt   time.Time `json:"expires_at"`
@@ -16,6 +19,8 @@ type RefreshToken struct {
 	UserID      uuid.UUID `json:"-"`
 }
 
+// UnmarshalJSON sets *t fields to values from JSON bytes.
+// It sets Fingerprint to bytes instead of a string.
 func (t *RefreshToken) UnmarshalJSON(b []byte) error {
 	var v struct {
 		ExpiresAt   time.Time

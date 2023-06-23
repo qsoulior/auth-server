@@ -1,3 +1,4 @@
+// Package app provides structures and functions to configure and run app.
 package app
 
 import (
@@ -13,6 +14,8 @@ import (
 	"github.com/rs/cors"
 )
 
+// NewServer creates mux and http.Server instance, appends middlewares and mounts controllers.
+// It returns pointer to a http.Server instance.
 func NewServer(cfg *Config, logger log.Logger, user usecase.User, token usecase.Token, auth usecase.Auth) *http.Server {
 	mux := chi.NewMux()
 

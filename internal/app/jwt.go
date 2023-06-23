@@ -1,3 +1,4 @@
+// Package app provides structures and functions to configure and run app.
 package app
 
 import (
@@ -6,6 +7,8 @@ import (
 	"github.com/qsoulior/auth-server/pkg/jwt"
 )
 
+// NewJWT reads private and public keys, creates JWT builder and JWT parser.
+// It returns error if keys read failed or configuration is incorrect.
 func NewJWT(cfg *Config) (jwt.Builder, jwt.Parser, error) {
 	privateKey, err := jwt.ReadPrivateKey(cfg.Key.PrivatePath, cfg.AT.Alg)
 	if err != nil {
