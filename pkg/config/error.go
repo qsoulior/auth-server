@@ -10,14 +10,14 @@ var (
 	ErrNotStruct  = errors.New("config type is not a struct")
 )
 
-type EmptyError struct {
-	key string
+type EmptyError string
+
+func (e EmptyError) Error() string {
+	return fmt.Sprintf("%s is empty", string(e))
 }
 
-func NewEmptyError(key string) *EmptyError {
-	return &EmptyError{key}
-}
+type ParseError string
 
-func (e *EmptyError) Error() string {
-	return fmt.Sprintf("%s is empty", e.key)
+func (e ParseError) Error() string {
+	return fmt.Sprintf("failed to parse %s", string(e))
 }

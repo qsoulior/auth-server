@@ -23,14 +23,30 @@ type TokenParams struct {
 	RefreshCap int
 }
 
+func (p TokenParams) Validate() error {
+	if p.AccessAge < 1 || p.AccessAge > 60 {
+		return ErrAccessAgeInvalid
+	}
+	if p.RefreshAge < 1 || p.RefreshAge > 366 {
+		return ErrRefreshAgeInvalid
+	}
+	if p.RefreshCap < 1 {
+		return ErrRefreshCapInvalid
+	}
+	return nil
+}
+
 type token struct {
 	repos  TokenRepos
 	params TokenParams
 	jwt    jwt.Builder
 }
 
-func NewToken(repos TokenRepos, params TokenParams, jwt jwt.Builder) *token {
-	return &token{repos, params, jwt}
+func NewToken(repos TokenRepos, params TokenParams, jwt jwt.Builder) (*token, error) {
+	if err := params.Validate(); err != nil {
+		return nil, err
+	}
+	return &token{repos, params, jwt}, nil
 }
 
 func (t *token) verify(token *entity.RefreshToken, fp []byte) error {

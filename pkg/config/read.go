@@ -67,12 +67,12 @@ func read(rv reflect.Value, getter EnvGetter) error {
 			val, exists := getter(key)
 			if !exists {
 				if val, exists = field.Tag.Lookup("default"); !exists {
-					return NewEmptyError(key)
+					return EmptyError(key)
 				}
 			}
 
 			if err := setValue(fieldVal, val); err != nil {
-				return err
+				return ParseError(key)
 			}
 		}
 	}

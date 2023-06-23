@@ -30,7 +30,7 @@ type (
 
 	HTTPConfig struct {
 		Host           string   `env:"HTTP_HOST" default:"0.0.0.0"`
-		Port           string   `env:"HTTP_PORT" default:"8000"`
+		Port           string   `env:"HTTP_PORT" default:"3000"`
 		AllowedOrigins []string `env:"HTTP_ORIGINS" default:"*"`
 	}
 
@@ -38,14 +38,14 @@ type (
 		URI string `env:"POSTGRES_URI"`
 	}
 
-	RTConfig struct {
-		Cap int `env:"RT_CAP" default:"10"`
-		Age int `env:"RT_AGE" default:"30"`
-	}
-
 	ATConfig struct {
 		Alg string `env:"AT_ALG" default:"HS256"`
 		Age int    `env:"AT_AGE" default:"15"`
+	}
+
+	RTConfig struct {
+		Cap int `env:"RT_CAP" default:"10"`
+		Age int `env:"RT_AGE" default:"30"`
 	}
 
 	BcryptConfig struct {

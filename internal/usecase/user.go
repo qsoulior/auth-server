@@ -88,13 +88,23 @@ type UserParams struct {
 	HashCost int
 }
 
+func (p UserParams) Validate() error {
+	if p.HashCost < bcrypt.MinCost || p.HashCost > bcrypt.MaxCost {
+		return ErrHashCostInvalid
+	}
+	return nil
+}
+
 type user struct {
 	repos  UserRepos
 	params UserParams
 }
 
-func NewUser(repos UserRepos, params UserParams) *user {
-	return &user{repos, params}
+func NewUser(repos UserRepos, params UserParams) (*user, error) {
+	if err := params.Validate(); err != nil {
+		return nil, err
+	}
+	return &user{repos, params}, nil
 }
 
 func (u *user) Create(data entity.User) (*entity.User, error) {

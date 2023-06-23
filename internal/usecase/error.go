@@ -19,6 +19,13 @@ var (
 	ErrTokenExpired      = errors.New("token is expired")
 )
 
+var (
+	ErrHashCostInvalid   = errors.New("bcrypt cost is out of allowed range [4,31]")
+	ErrAccessAgeInvalid  = errors.New("access token age is out of allowed range [1,60]")
+	ErrRefreshAgeInvalid = errors.New("refresh token age is less than allowed value (1)")
+	ErrRefreshCapInvalid = errors.New("refresh token capacity is less than allowed value (1)")
+)
+
 type Error struct {
 	Func     string
 	Err      error
