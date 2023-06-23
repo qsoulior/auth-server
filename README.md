@@ -7,44 +7,13 @@
 ## ▶️ Features
 - __High security__ — two types of tokens, asymmetric signing, fingerprint verification, password hashing and much more
 - __Easy installation and startup__ — use [Docker](https://github.com/qsoulior/auth-server#-docker) or [Docker Compose](https://github.com/qsoulior/auth-server#-docker-compose)
-- __Flexible and clear configuration__ — environment variables or .env file
-- __Simple interaction__ — RESTful API to interact with other services
-
-## ▶️ Tokens
-### 🔐 Access token
-Access token is a JSON Web Token (JWT) signed using one of the algorithms: `HMAC SHA`, `RSA`, `ECDSA` or `EdDSA`. Token contains a payload with two custom claims: `fingerprint` and `roles`.
-
-Payload example:
-```json
-{
-  "fingerprint": "fb57b63a63bb4923031a191fa0abd37db24d8c56c6ba33d26ca34529a505eeab",
-  "roles": ["admin"],
-  "iss": "auth",
-  "sub": "522198cc-42d9-4b47-b20e-1def58dc2709",
-  "exp": 1687173288
-}
-```
-Access token is created by `auth-server` and used by other microservices to authorize requests.
-
-### ♻️ Refresh token
-Refresh token is stored in database and used to refresh the access token.
-
-Refresh token entity:
-```go
-type RefreshToken struct {
-	ID          uuid.UUID `json:"id"`
-	ExpiresAt   time.Time `json:"expires_at"`
-	Fingerprint []byte    `json:"fingerprint"`
-	UserID      uuid.UUID `json:"-"`
-}
-```
-This token is issued by the server upon successful authentication and is refreshed along with refresh of the access token. Client receives a cookie in response:
-```http
-Set-Cookie: refresh_token=da5067f7-0235-4ca2-ab38-a650e44d7bbc; Path=/v1/token; Expires=Sat, 22 Jul 2023 16:35:36 GMT; HttpOnly; Secure; SameSite=None
-```
+- __Flexible and clear configuration__ — environment variables or .env file (see [Configuration](https://github.com/qsoulior/auth-server#%EF%B8%8F-configuration))
+- __Simple interaction__ — RESTful API to interact with other services (see [Endpoints](https://github.com/qsoulior/auth-server#%EF%B8%8F-endpoints))
 
 ## ▶️ Installation and Startup
-In production, the database must be running and migrations must be applied. They are located in the `migrations` directory.
+In production, the database must be running and migrations must be applied. 
+
+Migrations are located in the `migrations` directory.
 ### 🖥️ Locally
 Create [configuration](https://github.com/qsoulior/auth-server#%EF%B8%8F-configuration) file and specify its path instead of `<config_file>` in the following commands.
 
@@ -118,6 +87,65 @@ AT_AGE=15
 RT_CAP=10
 RT_AGE=30
 BCRYPT_COST=10
+```
+
+## ▶️ Tokens
+### 🔐 Access token
+Access token is a JSON Web Token (JWT) signed using one of the algorithms: `HMAC SHA`, `RSA`, `ECDSA` or `EdDSA`. Token contains a payload with two custom claims: `fingerprint` and `roles`.
+
+Payload example:
+```json
+{
+  "fingerprint": "fb57b63a63bb4923031a191fa0abd37db24d8c56c6ba33d26ca34529a505eeab",
+  "roles": ["admin"],
+  "iss": "auth",
+  "sub": "522198cc-42d9-4b47-b20e-1def58dc2709",
+  "exp": 1687173288
+}
+```
+Access token is created by `auth-server` and used by other microservices to authorize requests.
+Recipient microservice must parse token, check token issuer (`iss`) and expiration date (`exp`), compare `fingerprint` from payload with user fingerprint and optionally check `roles`. 
+
+Subject claim (`sub`) contains user ID. 
+
+Fingerprint is created from HTTP headers `Sec-CH-UA`, `User-Agent`, `Accept-Language`, `Upgrade-Insecure-Requests` and hashed using `SHA-256` in the following way:
+```cpp
+SHA256(Sec-CH-UA + ":" + User-Agent + ":" + Accept-Language + ":" + Upgrade-Insecure-Requests)
+```
+This repository also contains package `jwt` that provides [Parser](https://github.com/qsoulior/auth-server/blob/master/pkg/jwt/parser.go#L11) interface to parse access token:
+```go
+import (
+	"fmt"
+ 	
+	"github.com/qsoulior/auth-server/pkg/jwt"
+)
+
+parser, err := jwt.NewParser(jwt.Params{issuer, alg, publicKey})
+if err != nil {
+	return err
+}
+claims, err := parser.Parse(token)
+if err != nil {
+	return err
+}
+fmt.Println(claims.Subject) // "522198cc-42d9-4b47-b20e-1def58dc2709"
+```
+
+### ♻️ Refresh token
+Refresh token is stored in database and used to refresh the access token.
+
+Refresh token entity:
+```go
+type RefreshToken struct {
+	ID          uuid.UUID `json:"id"`
+	ExpiresAt   time.Time `json:"expires_at"`
+	Fingerprint []byte    `json:"fingerprint"`
+	UserID      uuid.UUID `json:"-"`
+}
+```
+This token is issued by the server upon successful authentication and is refreshed along with refresh of the access token. Client receives a cookie in response:
+```http
+Set-Cookie: refresh_token=da5067f7-0235-4ca2-ab38-a650e44d7bbc; Path=/v1/token; Expires=Sat, 22 Jul 2023 16:35:36 GMT; HttpOnly; Secure; SameSite=None
 ```
 
 ## ▶️ Endpoints
