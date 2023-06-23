@@ -4,9 +4,14 @@
 
 `auth-server` is a microservice that provides authentication and authorization using access and refresh tokens.
 
-## ▶️ Tokens
+## ▶️ Features
+- __High security__ — two types of tokens, asymmetric signing, fingerprint verification, password hashing and much more
+- __Easy installation and startup__ — use [Docker](https://github.com/qsoulior/auth-server#-docker) or [Docker Compose](https://github.com/qsoulior/auth-server#-docker-compose)
+- __Flexible and clear configuration__ — environment variables or .env file
+- __Simple interaction__ — RESTful API to interact with other services
 
-### 🔓 Access token
+## ▶️ Tokens
+### 🔐 Access token
 Access token is a JSON Web Token (JWT) signed using one of the algorithms: `HMAC SHA`, `RSA`, `ECDSA` or `EdDSA`. Token contains a payload with two custom claims: `fingerprint` and `roles`.
 
 Payload example:
@@ -38,7 +43,8 @@ This token is issued by the server upon successful authentication and is refresh
 Set-Cookie: refresh_token=da5067f7-0235-4ca2-ab38-a650e44d7bbc; Path=/v1/token; Expires=Sat, 22 Jul 2023 16:35:36 GMT; HttpOnly; Secure; SameSite=None
 ```
 
-## ▶️ Installation and Running
+## ▶️ Installation and Startup
+In production, the database must be running and migrations must be applied. They are located in the `migrations` directory.
 ### 🖥️ Locally
 Create [configuration](https://github.com/qsoulior/auth-server#%EF%B8%8F-configuration) file and specify its path instead of `<config_file>` in the following commands.
 
@@ -52,7 +58,7 @@ main -c <config_file>
 ### 🐳 Docker
 Create [configuration](https://github.com/qsoulior/auth-server#%EF%B8%8F-configuration) file and specify its path instead of `<config_file>` in the following commands.
 
-Private and public keys are generated using the `ECDSA` algorithm when the image is built. There is no effect of changing `KEY_PRIVATE` and `KEY_PUBLIC`.
+Private and public keys are generated using the `ECDSA` algorithm when the image is built. There is no effect of changing `KEY_PRIVATE`, `KEY_PUBLIC` or `AT_ALG`.
 
 `POSTGRES_URI` must be set to URI of running PostgreSQL database. 
 ```
@@ -78,6 +84,9 @@ docker compose -f docker-compose.prod.yaml up --build
 ```
 
 ## ▶️ Configuration
+Сonfiguration is performed using environment variables or .env file.
+
+List of environment variables:
 | Variable        | Default     | Constraint          | Description                                                   |
 | -               | -           | -                   | -                                                             |
 | `APP_NAME`      | auth        |                     | Application name used in the "iss" JWT claim                  |
@@ -194,6 +203,9 @@ Response:
 ```
 201 Created
 ```
+```http
+Set-Cookie: refresh_token=da5067f7-0235-4ca2-ab38-a650e44d7bbc; Path=/v1/token; Expires=Sat, 22 Jul 2023 16:35:36 GMT; HttpOnly; Secure; SameSite=None
+```
 ```json
 {
   "access_token": "<access_token>"
@@ -205,11 +217,14 @@ Response:
 
 Request:
 ```http
-Cookie: refresh_token=d337672c-d6e9-4058-b838-a634bbc5bddc; Expires=Wed, 19 Jul 2023 14:04:07 GMT; HttpOnly; Secure; SameSite=Strict
+Cookie: refresh_token=d337672c-d6e9-4058-b838-a634bbc5bddc
 ```
 Response:
 ```
 201 Created
+```
+```http
+Set-Cookie: refresh_token=da5067f7-0235-4ca2-ab38-a650e44d7bbc; Path=/v1/token; Expires=Sat, 22 Jul 2023 16:35:36 GMT; HttpOnly; Secure; SameSite=None
 ```
 ```json
 {
@@ -222,7 +237,7 @@ Response:
 
 Request:
 ```http
-Cookie: refresh_token=d337672c-d6e9-4058-b838-a634bbc5bddc; Expires=Wed, 19 Jul 2023 14:04:07 GMT; HttpOnly; Secure; SameSite=Strict
+Cookie: refresh_token=d337672c-d6e9-4058-b838-a634bbc5bddc
 ```
 Response:
 ```
@@ -234,7 +249,7 @@ Response:
 
 Request:
 ```http
-Cookie: refresh_token=d337672c-d6e9-4058-b838-a634bbc5bddc; Expires=Wed, 19 Jul 2023 14:04:07 GMT; HttpOnly; Secure; SameSite=Strict
+Cookie: refresh_token=d337672c-d6e9-4058-b838-a634bbc5bddc
 ```
 Response:
 ```
