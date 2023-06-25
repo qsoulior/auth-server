@@ -122,7 +122,7 @@ func NewUser(repos UserRepos, params UserParams) (*user, error) {
 }
 
 // Create validates data and creates a new user.
-// It returns pointer to an entity.User instance or nil if an error occured.
+// It returns pointer to an entity.User instance or nil if an error occurred.
 func (u *user) Create(data entity.User) (*entity.User, error) {
 	_, err := u.repos.User.GetByName(context.Background(), data.Name)
 	if err == nil {
@@ -151,7 +151,7 @@ func (u *user) Create(data entity.User) (*entity.User, error) {
 }
 
 // Get gets a user by ID.
-// It returns pointer to an entity.User instance or nil if an error occured.
+// It returns pointer to an entity.User instance or nil if an error occurred.
 func (u *user) Get(id uuid.UUID) (*entity.User, error) {
 	user, err := u.repos.User.GetByID(context.Background(), id)
 	if err != nil {
@@ -167,7 +167,7 @@ func (u *user) Get(id uuid.UUID) (*entity.User, error) {
 // Verify verifies user's name and password
 // and is used in authentication process.
 // It returns user ID if name and password are correct
-// or empty UUID if an error occured.
+// or empty UUID if an error occurred.
 func (u *user) Verify(data entity.User) (uuid.UUID, error) {
 	user, err := u.repos.User.GetByName(context.Background(), data.Name)
 	if err != nil {
