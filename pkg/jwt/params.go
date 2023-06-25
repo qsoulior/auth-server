@@ -1,3 +1,5 @@
+// Package jwt provides structures and functions to build/parse JWT,
+// read/parse public and private keys.
 package jwt
 
 import (
@@ -11,12 +13,15 @@ var (
 	ErrAlgNone    = errors.New("algorithm is none")
 )
 
+// Params represents params to parse/build JWT.
 type Params struct {
 	Issuer    string
 	Algorithm string
 	Key       any
 }
 
+// GetSigningMethod gets jwt.SigningMethod by alg.
+// It returns jwt.SigningMethod or nil if alg is invalid or "none".
 func GetSigningMethod(alg string) (jwt.SigningMethod, error) {
 	method := jwt.GetSigningMethod(alg)
 

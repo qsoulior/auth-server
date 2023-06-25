@@ -42,6 +42,7 @@ CONTAINER ID   IMAGE         COMMAND    CREATED         STATUS         PORTS    
 80fb44dc1638   auth-server   "./main"   4 seconds ago   Up 2 seconds   0.0.0.0:3000->80/tcp   auth-web
 
 $ docker cp auth-web:/keys ./
+Successfully copied 3.58kB
 
 $ ls ./keys
 ecdsa  ecdsa.pub

@@ -1,3 +1,5 @@
+// Package config provides functions to read env variables
+// and set them to a structure.
 package config
 
 import (
@@ -8,8 +10,11 @@ import (
 	"strings"
 )
 
+// EnvGetter is a type of function returning a value by key.
 type EnvGetter func(key string) (string, bool)
 
+// setValue parses val and sets fieldVal to val.
+// It returns error if parsing failed.
 func setValue(fieldVal reflect.Value, val string) error {
 	fieldType := fieldVal.Type()
 	switch fieldVal.Kind() {
@@ -52,6 +57,8 @@ func setValue(fieldVal reflect.Value, val string) error {
 	return nil
 }
 
+// read gets env variables and sets rv recursively to variables.
+// It returns error if setting failed.
 func read(rv reflect.Value, getter EnvGetter) error {
 	rvType := rv.Type()
 	for i := 0; i < rv.NumField(); i++ {
@@ -79,6 +86,8 @@ func read(rv reflect.Value, getter EnvGetter) error {
 	return nil
 }
 
+// valueOf checks kind of cfg and initializes reflect.Value.
+// It returns error if cfg is not a structure or a pointer to structure.
 func valueOf(cfg any) (reflect.Value, error) {
 	rv := reflect.ValueOf(cfg)
 	if rv.Kind() != reflect.Pointer {
@@ -93,6 +102,8 @@ func valueOf(cfg any) (reflect.Value, error) {
 	return re, nil
 }
 
+// ReadEnv gets env variables from environment and sets cfg to variables.
+// It returns error if cfg has incorrect type or read failed.
 func ReadEnv(cfg any) error {
 	re, err := valueOf(cfg)
 	if err != nil {
@@ -101,6 +112,8 @@ func ReadEnv(cfg any) error {
 	return read(re, os.LookupEnv)
 }
 
+// ReadEnvFile gets env variables from file and sets cfg to variables.
+// It returns error if cfg has incorrect type or read failed.
 func ReadEnvFile(cfg any, path string) error {
 	re, err := valueOf(cfg)
 	if err != nil {

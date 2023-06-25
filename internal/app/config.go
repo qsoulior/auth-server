@@ -56,7 +56,7 @@ type (
 )
 
 // NewConfig reads variables from file or environment
-// and sets them to Config fields.
+// and sets Config fields to variables.
 // It returns pointer to a Config instance or nil if read failed.
 func NewConfig(path string) (*Config, error) {
 	cfg := new(Config)
