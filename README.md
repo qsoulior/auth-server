@@ -1,5 +1,6 @@
 # auth-server
-![GitHub go.mod Go version (subdirectory of monorepo)](https://img.shields.io/github/go-mod/go-version/qsoulior/auth-server?style=flat-square)
+[![Go Reference](https://img.shields.io/badge/-reference-007d9c?style=flat-square&logo=go&logoColor=fafafa&labelColor=555555)](https://pkg.go.dev/github.com/qsoulior/auth-server)
+![Go Version](https://img.shields.io/github/go-mod/go-version/qsoulior/auth-server?style=flat-square)
 [![Go Report Card](https://goreportcard.com/badge/github.com/qsoulior/auth-server?style=flat-square)](https://goreportcard.com/report/github.com/qsoulior/auth-server)
 
 `auth-server` is a microservice that provides authentication and authorization using access and refresh tokens.
