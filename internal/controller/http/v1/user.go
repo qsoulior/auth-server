@@ -1,3 +1,4 @@
+// Package v1 provides structures and functions to implement HTTP controllers.
 package v1
 
 import (
@@ -9,10 +10,13 @@ import (
 	"github.com/qsoulior/auth-server/pkg/uuid"
 )
 
+// user represents controllers grouped by user route.
 type user struct {
 	userUC usecase.User
 }
 
+// Create reads user from request
+// and calls User.Create to create a new user.
 func (u *user) Create(w http.ResponseWriter, r *http.Request) {
 	user, err := readUser(r)
 	if err != nil {
@@ -31,6 +35,8 @@ func (u *user) Create(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+// Get gets user ID from request's context
+// and calls User.Get to get user data by ID.
 func (u *user) Get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	userID, _ := ctx.Value("userID").(uuid.UUID)
@@ -52,6 +58,8 @@ func (u *user) Get(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// Delete gets user ID from request's context and current password
+// from request's body, then calls User.Delete to delete user by ID.
 func (u *user) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	userID, _ := ctx.Value("userID").(uuid.UUID)
@@ -77,6 +85,9 @@ func (u *user) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// UpdatePassword gets user ID from request's context and passwords
+// from request's body, then calls User.UpdatePassword to
+// update user's password by ID.
 func (u *user) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	userID, _ := ctx.Value("userID").(uuid.UUID)

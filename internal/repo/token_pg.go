@@ -1,3 +1,4 @@
+// Package repo provides interfaces and structures to interact with database.
 package repo
 
 import (
@@ -9,14 +10,21 @@ import (
 	"github.com/qsoulior/auth-server/pkg/uuid"
 )
 
+// tokenPostgres implements Token interface.
+// It represents repository to interact with Postgres.
 type tokenPostgres struct {
 	*db.Postgres
 }
 
+// NewTokenPostgres creates a new tokenPostgres.
+// It returns pointer to a tokenPostgres instance.
 func NewTokenPostgres(db *db.Postgres) *tokenPostgres {
 	return &tokenPostgres{db}
 }
 
+// Create creates a new refresh token.
+// It returns pointer to an entity.RefreshToken instance
+// or nil if data is incorrect.
 func (t *tokenPostgres) Create(ctx context.Context, data entity.RefreshToken) (*entity.RefreshToken, error) {
 	const query = `INSERT INTO token(expires_at, fingerprint, user_id) VALUES ($1, $2, $3) RETURNING *`
 
@@ -30,6 +38,9 @@ func (t *tokenPostgres) Create(ctx context.Context, data entity.RefreshToken) (*
 	return &token, nil
 }
 
+// GetByID gets a refresh token by ID.
+// It returns pointer to an entity.RefreshToken instance
+// or nil if id is incorrect.
 func (t *tokenPostgres) GetByID(ctx context.Context, id uuid.UUID) (*entity.RefreshToken, error) {
 	const query = `SELECT * FROM token WHERE id = $1`
 
@@ -47,6 +58,8 @@ func (t *tokenPostgres) GetByID(ctx context.Context, id uuid.UUID) (*entity.Refr
 	return &token, nil
 }
 
+// GetByUser gets refresh tokens by user ID.
+// It returns slice of entity.RefreshToken instances.
 func (t *tokenPostgres) GetByUser(ctx context.Context, userID uuid.UUID) ([]entity.RefreshToken, error) {
 	const query = `SELECT * FROM token WHERE user_id = $1 ORDER BY expires_at`
 
@@ -63,6 +76,7 @@ func (t *tokenPostgres) GetByUser(ctx context.Context, userID uuid.UUID) ([]enti
 	return tokens, nil
 }
 
+// DeleteByID deletes a refresh token by ID.
 func (t *tokenPostgres) DeleteByID(ctx context.Context, id uuid.UUID) error {
 	const query = `DELETE FROM token WHERE id = $1`
 
@@ -73,6 +87,7 @@ func (t *tokenPostgres) DeleteByID(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
+// DeleteByUser deletes user-related refresh tokens by user ID.
 func (t *tokenPostgres) DeleteByUser(ctx context.Context, userID uuid.UUID) error {
 	const query = `DELETE FROM token WHERE user_id = $1`
 

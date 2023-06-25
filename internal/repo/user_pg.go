@@ -1,3 +1,4 @@
+// Package repo provides interfaces and structures to interact with database.
 package repo
 
 import (
@@ -9,14 +10,21 @@ import (
 	"github.com/qsoulior/auth-server/pkg/uuid"
 )
 
+// userPostgres implements User interface.
+// It represents repository to interact with Postgres.
 type userPostgres struct {
 	*db.Postgres
 }
 
+// NewUserPostgres creates a new userPostgres.
+// It returns pointer to an userPostgres instance.
 func NewUserPostgres(db *db.Postgres) *userPostgres {
 	return &userPostgres{db}
 }
 
+// Create creates a new user.
+// It returns pointer to an entity.User instance
+// or nil if data is incorrect.
 func (u *userPostgres) Create(ctx context.Context, data entity.User) (*entity.User, error) {
 	const query = `INSERT INTO "user"(name, password) VALUES ($1, $2) RETURNING *`
 
@@ -30,6 +38,9 @@ func (u *userPostgres) Create(ctx context.Context, data entity.User) (*entity.Us
 	return &user, nil
 }
 
+// GetByID gets a user by ID.
+// It returns pointer to an entity.User instance
+// or nil if id is incorrect.
 func (u *userPostgres) GetByID(ctx context.Context, id uuid.UUID) (*entity.User, error) {
 	const query = `SELECT * FROM "user" WHERE id = $1`
 
@@ -47,6 +58,9 @@ func (u *userPostgres) GetByID(ctx context.Context, id uuid.UUID) (*entity.User,
 	return &user, nil
 }
 
+// GetByName gets a user by unique name.
+// It returns pointer to an entity.User instance
+// or nil if name is incorrect.
 func (u *userPostgres) GetByName(ctx context.Context, name string) (*entity.User, error) {
 	const query = `SELECT * FROM "user" WHERE name = $1`
 
@@ -64,6 +78,7 @@ func (u *userPostgres) GetByName(ctx context.Context, name string) (*entity.User
 	return &user, nil
 }
 
+// UpdatePassword updates user's password by user ID.
 func (u *userPostgres) UpdatePassword(ctx context.Context, id uuid.UUID, password []byte) error {
 	const query = `UPDATE "user" SET password = $2 WHERE id = $1`
 
@@ -74,6 +89,7 @@ func (u *userPostgres) UpdatePassword(ctx context.Context, id uuid.UUID, passwor
 	return nil
 }
 
+// DeleteByID deletes a user by ID.
 func (u *userPostgres) DeleteByID(ctx context.Context, id uuid.UUID) error {
 	const query = `DELETE FROM "user" WHERE id = $1`
 

@@ -1,3 +1,4 @@
+// Package usecase provides interfaces and structures to encapsulate business logic.
 package usecase
 
 import (
@@ -18,6 +19,7 @@ const (
 	specialChars = ` !"#$%&'()*+,-./:;<=>?@[\]^_{|}~`
 )
 
+// validateName returns error if name is invalid.
 func validateName(name string) error {
 	if length := len(name); length < 4 || length > 20 {
 		return NewError(ErrNameInvalid, true)
@@ -32,6 +34,7 @@ func validateName(name string) error {
 	return nil
 }
 
+// validatePassword returns error if password is invalid.
 func validatePassword(password []byte) error {
 	if length := len(password); length < 8 || length > 72 {
 		return NewError(ErrPasswordInvalid, true)
@@ -59,6 +62,8 @@ func validatePassword(password []byte) error {
 	return NewError(ErrPasswordInvalid, true)
 }
 
+// hashPassword validates password and hashes it using bcrypt algorithm.
+// It returns nil if password is invalid or hashing failed.
 func hashPassword(password []byte, hashCost int) ([]byte, error) {
 	if err := validatePassword(password); err != nil {
 		return nil, err
@@ -72,6 +77,8 @@ func hashPassword(password []byte, hashCost int) ([]byte, error) {
 	return hash, nil
 }
 
+// verifyPassword compares hashedPassword with password.
+// It returns nil if passwords are equal.
 func verifyPassword(hashedPassword []byte, password []byte) error {
 	if err := bcrypt.CompareHashAndPassword(hashedPassword, password); err != nil {
 		return NewError(ErrPasswordIncorrect, true)
@@ -80,14 +87,18 @@ func verifyPassword(hashedPassword []byte, password []byte) error {
 	return nil
 }
 
+// UserRepos represents repositories the user use case interacts with.
 type UserRepos struct {
 	User repo.User
 }
 
+// UserParams represents parameters for user use case.
 type UserParams struct {
 	HashCost int
 }
 
+// Validate compares parameters with min and max values.
+// It returns error if at least one of parameters is invalid.
 func (p UserParams) Validate() error {
 	if p.HashCost < bcrypt.MinCost || p.HashCost > bcrypt.MaxCost {
 		return ErrHashCostInvalid
@@ -95,11 +106,14 @@ func (p UserParams) Validate() error {
 	return nil
 }
 
+// user implements User interface.
 type user struct {
 	repos  UserRepos
 	params UserParams
 }
 
+// NewUser validates parameters and creates a new user use case.
+// It returns pointer to an user instance or nil if parameters are invalid.
 func NewUser(repos UserRepos, params UserParams) (*user, error) {
 	if err := params.Validate(); err != nil {
 		return nil, err
@@ -107,6 +121,8 @@ func NewUser(repos UserRepos, params UserParams) (*user, error) {
 	return &user{repos, params}, nil
 }
 
+// Create validates data and creates a new user.
+// It returns pointer to an entity.User instance or nil if an error occured.
 func (u *user) Create(data entity.User) (*entity.User, error) {
 	_, err := u.repos.User.GetByName(context.Background(), data.Name)
 	if err == nil {
@@ -134,6 +150,8 @@ func (u *user) Create(data entity.User) (*entity.User, error) {
 	return user, nil
 }
 
+// Get gets a user by ID.
+// It returns pointer to an entity.User instance or nil if an error occured.
 func (u *user) Get(id uuid.UUID) (*entity.User, error) {
 	user, err := u.repos.User.GetByID(context.Background(), id)
 	if err != nil {
@@ -146,6 +164,10 @@ func (u *user) Get(id uuid.UUID) (*entity.User, error) {
 	return user, nil
 }
 
+// Verify verifies user's name and password
+// and is used in authentication process.
+// It returns user ID if name and password are correct
+// or empty UUID if an error occured.
 func (u *user) Verify(data entity.User) (uuid.UUID, error) {
 	user, err := u.repos.User.GetByName(context.Background(), data.Name)
 	if err != nil {
@@ -162,23 +184,8 @@ func (u *user) Verify(data entity.User) (uuid.UUID, error) {
 	return user.ID, nil
 }
 
-func (u *user) Delete(id uuid.UUID, currentPassword []byte) error {
-	user, err := u.Get(id)
-	if err != nil {
-		return err
-	}
-
-	if err = verifyPassword(user.Password, currentPassword); err != nil {
-		return err
-	}
-
-	if err := u.repos.User.DeleteByID(context.Background(), user.ID); err != nil {
-		return NewError(err, false)
-	}
-
-	return nil
-}
-
+// UpdatePassword updates user's password by user ID
+// if user exists and currentPassword is correct.
 func (u *user) UpdatePassword(id uuid.UUID, currentPassword []byte, newPassword []byte) error {
 	user, err := u.Get(id)
 	if err != nil {
@@ -195,6 +202,25 @@ func (u *user) UpdatePassword(id uuid.UUID, currentPassword []byte, newPassword 
 	}
 
 	if err = u.repos.User.UpdatePassword(context.Background(), user.ID, hashedPassword); err != nil {
+		return NewError(err, false)
+	}
+
+	return nil
+}
+
+// Delete deletes a user by ID
+// if user exists and currentPassword is correct.
+func (u *user) Delete(id uuid.UUID, currentPassword []byte) error {
+	user, err := u.Get(id)
+	if err != nil {
+		return err
+	}
+
+	if err = verifyPassword(user.Password, currentPassword); err != nil {
+		return err
+	}
+
+	if err := u.repos.User.DeleteByID(context.Background(), user.ID); err != nil {
 		return NewError(err, false)
 	}
 

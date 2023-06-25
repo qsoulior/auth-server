@@ -1,3 +1,4 @@
+// Package v1 provides structures and functions to implement HTTP controllers.
 package v1
 
 import (
@@ -9,6 +10,8 @@ import (
 	"github.com/qsoulior/auth-server/pkg/log"
 )
 
+// AuthMiddleware creates a middleware that verifies access token.
+// It returns api.Middleware instance.
 func AuthMiddleware(auth usecase.Auth, logger log.Logger) api.Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

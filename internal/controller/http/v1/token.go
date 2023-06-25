@@ -1,3 +1,4 @@
+// Package v1 provides structures and functions to implement HTTP controllers.
 package v1
 
 import (
@@ -7,11 +8,15 @@ import (
 	"github.com/qsoulior/auth-server/internal/usecase"
 )
 
+// token represents controllers grouped by token route.
 type token struct {
 	userUC  usecase.User
 	tokenUC usecase.Token
 }
 
+// Create reads user data and fingerprint from request, calls User.Verify
+// use case to authenticate user and Token.Create use case to create
+// new access and refresh tokens.
 func (t *token) Create(w http.ResponseWriter, r *http.Request) {
 	data, err := readUser(r)
 	if err != nil {
@@ -42,6 +47,8 @@ func (t *token) Create(w http.ResponseWriter, r *http.Request) {
 	writeAccessToken(w, accessToken)
 }
 
+// Refresh reads refresh token and fingerprint from request
+// and calls Token.Refresh use case to create new access and refresh tokens.
 func (t *token) Refresh(w http.ResponseWriter, r *http.Request) {
 	tokenID, err := readRefreshToken(r)
 	if err != nil {
@@ -67,6 +74,8 @@ func (t *token) Refresh(w http.ResponseWriter, r *http.Request) {
 	writeAccessToken(w, accessToken)
 }
 
+// Revoke reads refresh token and fingerprint from request
+// and calls Token.Delete to delete refresh token.
 func (t *token) Revoke(w http.ResponseWriter, r *http.Request) {
 	tokenID, err := readRefreshToken(r)
 	if err != nil {
@@ -90,6 +99,8 @@ func (t *token) Revoke(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// RevokeAll reads refresh token and fingerprint from request
+// and calls Token.DeleteAll to delete all user refresh tokens.
 func (t *token) RevokeAll(w http.ResponseWriter, r *http.Request) {
 	tokenID, err := readRefreshToken(r)
 	if err != nil {

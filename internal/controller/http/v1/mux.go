@@ -1,3 +1,4 @@
+// Package v1 provides structures and functions to implement HTTP controllers.
 package v1
 
 import (
@@ -15,6 +16,8 @@ import (
 	"github.com/qsoulior/auth-server/pkg/uuid"
 )
 
+// Mux creates a new mux and mounts controllers.
+// It returns pointer to a chi.Mux instance.
 func Mux(userUC usecase.User, tokenUC usecase.Token, authUC usecase.Auth, logger log.Logger) http.Handler {
 	user := user{userUC}
 	token := token{userUC, tokenUC}
@@ -39,6 +42,8 @@ func Mux(userUC usecase.User, tokenUC usecase.Token, authUC usecase.Auth, logger
 	return mux
 }
 
+// readUser reads user from request's body and decodes it.
+// It returns pointer to an entity.User instance.
 func readUser(r *http.Request) (*entity.User, error) {
 	user := new(entity.User)
 	d := json.NewDecoder(r.Body)
@@ -50,6 +55,8 @@ func readUser(r *http.Request) (*entity.User, error) {
 	return user, nil
 }
 
+// readAccessToken reads access token from request's Authorization header.
+// It returns access token string or empty string if header is invalid.
 func readAccessToken(r *http.Request) (entity.AccessToken, error) {
 	authorization := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
 	if len(authorization) < 2 || authorization[0] != "Bearer" {
@@ -59,6 +66,8 @@ func readAccessToken(r *http.Request) (entity.AccessToken, error) {
 	return entity.AccessToken(authorization[1]), nil
 }
 
+// readRefreshToken reads refresh token from request's cookie.
+// It returns error if cookie is empty.
 func readRefreshToken(r *http.Request) (uuid.UUID, error) {
 	var (
 		data  string
@@ -76,10 +85,13 @@ func readRefreshToken(r *http.Request) (uuid.UUID, error) {
 	return uuid.FromString(data)
 }
 
+// readFingerprint reads headers from request and creates fingerprint using them.
+// It returns fingerprint byte slice.
 func readFingerprint(r *http.Request) []byte {
 	return []byte(fmt.Sprintf("%s:%s:%s:%s", r.Header.Get("Sec-CH-UA"), r.Header.Get("User-Agent"), r.Header.Get("Accept-Language"), r.Header.Get("Upgrade-Insecure-Requests")))
 }
 
+// writeAccessToken writes an access token to response body.
 func writeAccessToken(w http.ResponseWriter, token entity.AccessToken) {
 	e := json.NewEncoder(w)
 	e.Encode(map[string]any{
@@ -87,6 +99,7 @@ func writeAccessToken(w http.ResponseWriter, token entity.AccessToken) {
 	})
 }
 
+// writeRefreshToken writes a refresh token to response cookie.
 func writeRefreshToken(w http.ResponseWriter, token *entity.RefreshToken) {
 	cookie := &http.Cookie{
 		Name:     "refresh_token",
@@ -101,6 +114,7 @@ func writeRefreshToken(w http.ResponseWriter, token *entity.RefreshToken) {
 	http.SetCookie(w, cookie)
 }
 
+// deleteRefreshToken writes an expired refresh token to response cookie.
 func deleteRefreshToken(w http.ResponseWriter) {
 	cookie := &http.Cookie{
 		Name:    "refresh_token",

@@ -1,3 +1,4 @@
+// Package usecase provides interfaces and structures to encapsulate business logic.
 package usecase
 
 import (
@@ -26,20 +27,26 @@ var (
 	ErrRefreshCapInvalid = errors.New("refresh token capacity is less than allowed value (1)")
 )
 
+// Error represents error that occurs in use cases.
 type Error struct {
 	Func     string
 	Err      error
 	External bool
 }
 
+// Error returns string representation of Error.
 func (e *Error) Error() string {
 	return fmt.Sprintf("%s: %s", e.Func, e.Err.Error())
 }
 
+// Unwrap returns wrapped error.
 func (e *Error) Unwrap() error {
 	return e.Err
 }
 
+// NewError gets name of function that caused error
+// and creates a new Error.
+// It returns pointer to an Error instance.
 func NewError(err error, external bool) error {
 	pc := make([]uintptr, 1)
 	n := runtime.Callers(2, pc)

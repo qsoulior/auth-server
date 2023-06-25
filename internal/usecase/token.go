@@ -1,3 +1,4 @@
+// Package usecase provides interfaces and structures to encapsulate business logic.
 package usecase
 
 import (
@@ -12,17 +13,21 @@ import (
 	"github.com/qsoulior/auth-server/pkg/uuid"
 )
 
+// TokenRepos represents repositories the token use case interacts with.
 type TokenRepos struct {
 	Token repo.Token
 	Role  repo.Role
 }
 
+// TokenParams represents parameters for token use case.
 type TokenParams struct {
 	AccessAge  int
 	RefreshAge int
 	RefreshCap int
 }
 
+// Validate compares parameters with min and max values.
+// It returns error if at least one of parameters is invalid.
 func (p TokenParams) Validate() error {
 	if p.AccessAge < 1 || p.AccessAge > 60 {
 		return ErrAccessAgeInvalid
@@ -36,12 +41,15 @@ func (p TokenParams) Validate() error {
 	return nil
 }
 
+// token implements Token interface.
 type token struct {
 	repos  TokenRepos
 	params TokenParams
 	jwt    jwt.Builder
 }
 
+// NewToken validates parameters and creates a new token use case.
+// It returns pointer to a token instance or nil if parameters are invalid.
 func NewToken(repos TokenRepos, params TokenParams, jwt jwt.Builder) (*token, error) {
 	if err := params.Validate(); err != nil {
 		return nil, err
@@ -49,6 +57,8 @@ func NewToken(repos TokenRepos, params TokenParams, jwt jwt.Builder) (*token, er
 	return &token{repos, params, jwt}, nil
 }
 
+// verify compares user's fingerprint with token-related fingerprint.
+// It returns nil if fingerprints are equal.
 func (t *token) verify(token *entity.RefreshToken, fp []byte) error {
 	fpObj := fingerprint.New(token.UserID, fp)
 	if err := fpObj.Verify(token.Fingerprint); err != nil {
@@ -58,6 +68,9 @@ func (t *token) verify(token *entity.RefreshToken, fp []byte) error {
 	return nil
 }
 
+// create creates new access and refresh tokens using user's fingerprint.
+// It returns entity.AccessToken instance
+// and pointer to an entity.RefreshToken instance.
 func (t *token) create(userID uuid.UUID, fp []byte) (entity.AccessToken, *entity.RefreshToken, error) {
 	// fingerprint
 	fpObj := fingerprint.New(userID, fp)
@@ -97,6 +110,10 @@ func (t *token) create(userID uuid.UUID, fp []byte) (entity.AccessToken, *entity
 	return entity.AccessToken(at), rt, nil
 }
 
+// Create creates new access and refresh tokens using user's fingerprint
+// and deletes old tokens if total number of tokens is greater than RefreshCap.
+// It returns entity.AccessToken instance
+// and pointer to an entity.RefreshToken instance.
 func (t *token) Create(userID uuid.UUID, fp []byte) (entity.AccessToken, *entity.RefreshToken, error) {
 	tokens, err := t.repos.Token.GetByUser(context.Background(), userID)
 	if err != nil {
@@ -117,6 +134,10 @@ func (t *token) Create(userID uuid.UUID, fp []byte) (entity.AccessToken, *entity
 	return accessToken, refreshToken, nil
 }
 
+// Refresh verifies user's fingerprint and current refresh token by ID,
+// deletes an old refresh token and creates new access and refresh tokens.
+// It returns entity.AccessToken instance
+// and pointer to an entity.RefreshToken instance.
 func (t *token) Refresh(id uuid.UUID, fp []byte) (entity.AccessToken, *entity.RefreshToken, error) {
 	token, err := t.Get(id)
 	if err != nil {
@@ -139,6 +160,9 @@ func (t *token) Refresh(id uuid.UUID, fp []byte) (entity.AccessToken, *entity.Re
 	return accessToken, refreshToken, nil
 }
 
+// Get gets a refresh token by ID.
+// It returns pointer to an entity.RefreshToken instance
+// if id is correct and token isn't expired.
 func (t *token) Get(id uuid.UUID) (*entity.RefreshToken, error) {
 	token, err := t.repos.Token.GetByID(context.Background(), id)
 	if err != nil {
@@ -154,6 +178,9 @@ func (t *token) Get(id uuid.UUID) (*entity.RefreshToken, error) {
 	return token, nil
 }
 
+// Delete verifies user's fingerprint and current refresh token by ID
+// and deletes a refresh token by ID.
+// It returns error if id is incorrect or token is expired.
 func (t *token) Delete(id uuid.UUID, fp []byte) error {
 	token, err := t.Get(id)
 	if err != nil {
@@ -171,6 +198,9 @@ func (t *token) Delete(id uuid.UUID, fp []byte) error {
 	return nil
 }
 
+// DeleteAll verifies user's fingerprint and current refresh token by ID
+// and deletes all user refresh tokens.
+// It returns error if id is incorrect or token is expired.
 func (t *token) DeleteAll(id uuid.UUID, fp []byte) error {
 	token, err := t.Get(id)
 	if err != nil {
