@@ -1,4 +1,3 @@
-// Package v1 provides structures and functions to implement HTTP controllers.
 package v1
 
 import (

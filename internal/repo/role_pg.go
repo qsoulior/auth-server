@@ -1,4 +1,3 @@
-// Package repo provides interfaces and structures to interact with database.
 package repo
 
 import (

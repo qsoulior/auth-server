@@ -1,4 +1,3 @@
-// Package entity provides entity structures for use cases, repositories and controllers.
 package entity
 
 import (

@@ -1,4 +1,3 @@
-// Package app provides structures and functions to configure and run app.
 package app
 
 import (

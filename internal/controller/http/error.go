@@ -1,4 +1,3 @@
-// Package http provides common structures and functions for HTTP controllers.
 package http
 
 import (

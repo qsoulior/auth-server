@@ -1,5 +1,3 @@
-// Package jwt provides structures and functions to build/parse JWT,
-// read/parse public and private keys.
 package jwt
 
 import (

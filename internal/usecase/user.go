@@ -1,4 +1,3 @@
-// Package usecase provides interfaces and structures to encapsulate business logic.
 package usecase
 
 import (
