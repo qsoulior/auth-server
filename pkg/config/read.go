@@ -1,5 +1,5 @@
 // Package config provides functions to read env variables
-// and set them to a structure.
+// and set structure fields to variables.
 package config
 
 import (
