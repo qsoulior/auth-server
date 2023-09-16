@@ -154,6 +154,7 @@ type RefreshToken struct {
 	ID          uuid.UUID `json:"id"`
 	ExpiresAt   time.Time `json:"expires_at"`
 	Fingerprint []byte    `json:"fingerprint"`
+	Session     bool      `json:"session"`
 	UserID      uuid.UUID `json:"-"`
 }
 ```
@@ -238,7 +239,8 @@ Request:
 ```json
 {
   "name": "test",
-  "password": "Test123$"
+  "password": "Test123$",
+  "session": false
 }
 ```
 Response:
