@@ -26,9 +26,9 @@ func NewTokenPostgres(db *db.Postgres) *tokenPostgres {
 // It returns pointer to an entity.RefreshToken instance
 // or nil if data is incorrect.
 func (t *tokenPostgres) Create(ctx context.Context, data entity.RefreshToken) (*entity.RefreshToken, error) {
-	const query = `INSERT INTO token(expires_at, fingerprint, user_id) VALUES ($1, $2, $3) RETURNING *`
+	const query = `INSERT INTO token(expires_at, fingerprint, is_session, user_id) VALUES ($1, $2, $3, $4) RETURNING *`
 
-	rows, err := t.Pool.Query(ctx, query, data.ExpiresAt, data.Fingerprint, data.UserID)
+	rows, err := t.Pool.Query(ctx, query, data.ExpiresAt, data.Fingerprint, data.Session, data.UserID)
 	if err != nil {
 		return nil, err
 	}
