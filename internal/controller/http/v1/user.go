@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	api "github.com/qsoulior/auth-server/internal/controller/http"
+	"github.com/qsoulior/auth-server/internal/entity"
 	"github.com/qsoulior/auth-server/internal/usecase"
 	"github.com/qsoulior/auth-server/pkg/uuid"
 )
@@ -17,13 +18,15 @@ type user struct {
 // Create reads user from request
 // and calls User.Create to create a new user.
 func (u *user) Create(w http.ResponseWriter, r *http.Request) {
-	user, err := readUser(r)
+	var user entity.User
+	d := json.NewDecoder(r.Body)
+	err := d.Decode(&user)
 	if err != nil {
 		api.DecodingError(w)
 		return
 	}
 
-	_, err = u.userUC.Create(*user)
+	_, err = u.userUC.Create(user)
 	if err != nil {
 		api.HandleError(err, func(e *usecase.Error) {
 			api.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)

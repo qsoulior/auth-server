@@ -1,9 +1,11 @@
 package v1
 
 import (
+	"encoding/json"
 	"net/http"
 
 	api "github.com/qsoulior/auth-server/internal/controller/http"
+	"github.com/qsoulior/auth-server/internal/entity"
 	"github.com/qsoulior/auth-server/internal/usecase"
 )
 
@@ -17,14 +19,21 @@ type token struct {
 // use case to authenticate user and Token.Create use case to create
 // new access and refresh tokens.
 func (t *token) Create(w http.ResponseWriter, r *http.Request) {
-	data, err := readUser(r)
+	var data struct {
+		Name     string `json:"name"`
+		Password string `json:"password"`
+		Session  bool   `json:"session"`
+	}
+	d := json.NewDecoder(r.Body)
+	err := d.Decode(&data)
 	if err != nil {
 		api.DecodingError(w)
 		return
 	}
+
 	fingerprint := readFingerprint(r)
 
-	userID, err := t.userUC.Verify(*data)
+	userID, err := t.userUC.Verify(entity.User{Name: data.Name, Password: []byte(data.Password)})
 	if err != nil {
 		api.HandleError(err, func(e *usecase.Error) {
 			api.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
@@ -40,7 +49,7 @@ func (t *token) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeRefreshToken(w, refreshToken)
+	writeRefreshToken(w, refreshToken, data.Session)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	writeAccessToken(w, accessToken)
@@ -67,7 +76,7 @@ func (t *token) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeRefreshToken(w, refreshToken)
+	writeRefreshToken(w, refreshToken, false)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	writeAccessToken(w, accessToken)

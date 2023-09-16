@@ -42,19 +42,6 @@ func Mux(userUC usecase.User, tokenUC usecase.Token, authUC usecase.Auth, logger
 	return mux
 }
 
-// readUser reads user from request's body and decodes it.
-// It returns pointer to an entity.User instance.
-func readUser(r *http.Request) (*entity.User, error) {
-	user := new(entity.User)
-	d := json.NewDecoder(r.Body)
-	err := d.Decode(&user)
-	if err != nil {
-		return nil, err
-	}
-
-	return user, nil
-}
-
 // readAccessToken reads access token from request's Authorization header.
 // It returns access token string or empty string if header is invalid.
 func readAccessToken(r *http.Request) (entity.AccessToken, error) {
@@ -100,15 +87,18 @@ func writeAccessToken(w http.ResponseWriter, token entity.AccessToken) {
 }
 
 // writeRefreshToken writes a refresh token to response cookie.
-func writeRefreshToken(w http.ResponseWriter, token *entity.RefreshToken) {
+func writeRefreshToken(w http.ResponseWriter, token *entity.RefreshToken, session bool) {
 	cookie := &http.Cookie{
 		Name:     "refresh_token",
 		Path:     "/v1/token",
 		Value:    token.ID.String(),
-		Expires:  token.ExpiresAt,
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteNoneMode,
+	}
+
+	if !session {
+		cookie.Expires = token.ExpiresAt
 	}
 
 	http.SetCookie(w, cookie)
@@ -117,8 +107,11 @@ func writeRefreshToken(w http.ResponseWriter, token *entity.RefreshToken) {
 // deleteRefreshToken writes an expired refresh token to response cookie.
 func deleteRefreshToken(w http.ResponseWriter) {
 	cookie := &http.Cookie{
-		Name:    "refresh_token",
-		Expires: time.Unix(0, 0),
+		Name:     "refresh_token",
+		Expires:  time.Unix(0, 0),
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode,
 	}
 
 	http.SetCookie(w, cookie)

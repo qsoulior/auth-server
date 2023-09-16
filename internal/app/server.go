@@ -24,6 +24,7 @@ func NewServer(cfg *Config, logger log.Logger, user usecase.User, token usecase.
 	c := cors.New(cors.Options{
 		AllowedOrigins:   cfg.HTTP.AllowedOrigins,
 		AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
+		AllowedHeaders:   []string{"*"},
 		AllowCredentials: true,
 	})
 	mux.Use(c.Handler)
