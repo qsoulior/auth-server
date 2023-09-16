@@ -37,7 +37,7 @@ type Token interface {
 	// Create creates new access and refresh tokens using user's fingerprint.
 	// It returns entity.AccessToken instance
 	// and pointer to an entity.RefreshToken instance.
-	Create(userID uuid.UUID, fingerprint []byte) (entity.AccessToken, *entity.RefreshToken, error)
+	Create(userID uuid.UUID, fingerprint []byte, session bool) (entity.AccessToken, *entity.RefreshToken, error)
 
 	// Refresh verifies user's fingerprint and current refresh token by ID
 	// and creates new access and refresh tokens.

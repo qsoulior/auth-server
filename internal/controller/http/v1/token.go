@@ -41,7 +41,7 @@ func (t *token) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, refreshToken, err := t.tokenUC.Create(userID, fingerprint)
+	accessToken, refreshToken, err := t.tokenUC.Create(userID, fingerprint, data.Session)
 	if err != nil {
 		api.HandleError(err, func(e *usecase.Error) {
 			api.ErrorJSON(w, e.Err.Error(), http.StatusBadRequest)
@@ -49,7 +49,7 @@ func (t *token) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeRefreshToken(w, refreshToken, data.Session)
+	writeRefreshToken(w, refreshToken)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	writeAccessToken(w, accessToken)
@@ -76,7 +76,7 @@ func (t *token) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeRefreshToken(w, refreshToken, false)
+	writeRefreshToken(w, refreshToken)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	writeAccessToken(w, accessToken)

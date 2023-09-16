@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"errors"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/qsoulior/auth-server/internal/entity"
@@ -27,9 +28,12 @@ func NewTokenPostgres(db *db.Postgres) *tokenPostgres {
 func (t *tokenPostgres) Create(ctx context.Context, data entity.RefreshToken) (*entity.RefreshToken, error) {
 	const query = `INSERT INTO token(expires_at, fingerprint, user_id) VALUES ($1, $2, $3) RETURNING *`
 
-	var token entity.RefreshToken
-	err := t.Pool.QueryRow(ctx, query, data.ExpiresAt, data.Fingerprint, data.UserID).Scan(&token.ID, &token.ExpiresAt, &token.Fingerprint, &token.UserID)
+	rows, err := t.Pool.Query(ctx, query, data.ExpiresAt, data.Fingerprint, data.UserID)
+	if err != nil {
+		return nil, err
+	}
 
+	token, err := pgx.CollectOneRow[entity.RefreshToken](rows, pgx.RowToStructByPos[entity.RefreshToken])
 	if err != nil {
 		return nil, err
 	}
@@ -43,10 +47,13 @@ func (t *tokenPostgres) Create(ctx context.Context, data entity.RefreshToken) (*
 func (t *tokenPostgres) GetByID(ctx context.Context, id uuid.UUID) (*entity.RefreshToken, error) {
 	const query = `SELECT * FROM token WHERE id = $1`
 
-	var token entity.RefreshToken
-	err := t.Pool.QueryRow(ctx, query, id).Scan(&token.ID, &token.ExpiresAt, &token.Fingerprint, &token.UserID)
+	rows, err := t.Pool.Query(ctx, query, id)
+	if err != nil {
+		return nil, err
+	}
 
-	if err == pgx.ErrNoRows {
+	token, err := pgx.CollectOneRow[entity.RefreshToken](rows, pgx.RowToStructByPos[entity.RefreshToken])
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNoRows
 	}
 

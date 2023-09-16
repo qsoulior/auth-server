@@ -87,7 +87,7 @@ func writeAccessToken(w http.ResponseWriter, token entity.AccessToken) {
 }
 
 // writeRefreshToken writes a refresh token to response cookie.
-func writeRefreshToken(w http.ResponseWriter, token *entity.RefreshToken, session bool) {
+func writeRefreshToken(w http.ResponseWriter, token *entity.RefreshToken) {
 	cookie := &http.Cookie{
 		Name:     "refresh_token",
 		Path:     "/v1/token",
@@ -97,7 +97,7 @@ func writeRefreshToken(w http.ResponseWriter, token *entity.RefreshToken, sessio
 		SameSite: http.SameSiteNoneMode,
 	}
 
-	if !session {
+	if !token.Session {
 		cookie.Expires = token.ExpiresAt
 	}
 

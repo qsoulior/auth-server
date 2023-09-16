@@ -70,7 +70,7 @@ func (t *token) verify(token *entity.RefreshToken, fp []byte) error {
 // create creates new access and refresh tokens using user's fingerprint.
 // It returns entity.AccessToken instance
 // and pointer to an entity.RefreshToken instance.
-func (t *token) create(userID uuid.UUID, fp []byte) (entity.AccessToken, *entity.RefreshToken, error) {
+func (t *token) create(userID uuid.UUID, fp []byte, session bool) (entity.AccessToken, *entity.RefreshToken, error) {
 	// fingerprint
 	fpObj := fingerprint.New(userID, fp)
 	fpHash, err := fpObj.Hash()
@@ -82,6 +82,7 @@ func (t *token) create(userID uuid.UUID, fp []byte) (entity.AccessToken, *entity
 	rtData := entity.RefreshToken{
 		ExpiresAt:   time.Now().AddDate(0, 0, t.params.RefreshAge),
 		Fingerprint: fpHash,
+		Session:     session,
 		UserID:      userID,
 	}
 
@@ -113,7 +114,7 @@ func (t *token) create(userID uuid.UUID, fp []byte) (entity.AccessToken, *entity
 // and deletes old tokens if total number of tokens is greater than RefreshCap.
 // It returns entity.AccessToken instance
 // and pointer to an entity.RefreshToken instance.
-func (t *token) Create(userID uuid.UUID, fp []byte) (entity.AccessToken, *entity.RefreshToken, error) {
+func (t *token) Create(userID uuid.UUID, fp []byte, session bool) (entity.AccessToken, *entity.RefreshToken, error) {
 	tokens, err := t.repos.Token.GetByUser(context.Background(), userID)
 	if err != nil {
 		return "", nil, NewError(err, false)
@@ -125,7 +126,7 @@ func (t *token) Create(userID uuid.UUID, fp []byte) (entity.AccessToken, *entity
 		}
 	}
 
-	accessToken, refreshToken, err := t.create(userID, fp)
+	accessToken, refreshToken, err := t.create(userID, fp, session)
 	if err != nil {
 		return "", nil, err
 	}
@@ -151,7 +152,7 @@ func (t *token) Refresh(id uuid.UUID, fp []byte) (entity.AccessToken, *entity.Re
 		return "", nil, NewError(err, false)
 	}
 
-	accessToken, refreshToken, err := t.create(token.UserID, fp)
+	accessToken, refreshToken, err := t.create(token.UserID, fp, token.Session)
 	if err != nil {
 		return "", nil, err
 	}

@@ -15,6 +15,7 @@ type RefreshToken struct {
 	ID          uuid.UUID `json:"id"`
 	ExpiresAt   time.Time `json:"expires_at"`
 	Fingerprint []byte    `json:"fingerprint"`
+	Session     bool      `json:"session"`
 	UserID      uuid.UUID `json:"-"`
 }
 
@@ -24,6 +25,7 @@ func (t *RefreshToken) UnmarshalJSON(b []byte) error {
 	var v struct {
 		ExpiresAt   time.Time
 		Fingerprint string
+		Session     bool
 		UserID      uuid.UUID
 	}
 	if err := json.Unmarshal(b, &v); err != nil {
@@ -32,6 +34,7 @@ func (t *RefreshToken) UnmarshalJSON(b []byte) error {
 
 	t.ExpiresAt = v.ExpiresAt
 	t.Fingerprint = []byte(v.Fingerprint)
+	t.Session = v.Session
 	t.UserID = v.UserID
 
 	return nil
