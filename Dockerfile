@@ -1,4 +1,4 @@
-FROM golang:1.20.5-alpine AS dependencies
+FROM golang:1.21.1-alpine AS dependencies
 WORKDIR /dependencies
 COPY go.mod go.sum ./
 RUN go mod download && go mod verify
@@ -8,7 +8,7 @@ WORKDIR /build
 COPY . .
 RUN go build -v -o ./main ./cmd
 
-FROM alpine:latest AS keys
+FROM alpine:3.18.3 AS keys
 WORKDIR /keys
 RUN apk add --no-cache --update openssh-keygen && \
     ssh-keygen -t ecdsa -f ./ecdsa -b 521 -m pem && \
